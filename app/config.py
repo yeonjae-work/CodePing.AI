@@ -6,6 +6,9 @@ class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
 
     github_webhook_secret: str = Field("mydevsecret", env="GITHUB_WEBHOOK_SECRET")
+    database_url: str = Field(
+        "sqlite+aiosqlite:///./dev.db", env="DATABASE_URL"
+    )
 
     class Config:
         env_file = ".env"

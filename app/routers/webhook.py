@@ -11,6 +11,9 @@ from fastapi.responses import JSONResponse
 from app.config import Settings, get_settings
 from app.models.github import ValidatedEvent
 from app.core.platform_router import PlatformRouter
+from app.db import get_session
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.storage import save_event
 
 router = APIRouter(tags=["webhook"])
 
@@ -46,6 +49,7 @@ async def handle_github_webhook(
     request: Request,
     x_github_event: str | None = Header(None, alias="X-GitHub-Event"),
     body: bytes = Depends(_verify_github_signature),
+    session: AsyncSession = Depends(get_session),
 ) -> JSONResponse:
     """Handle GitHub push webhook and return a validated event structure."""
 
@@ -68,5 +72,8 @@ async def handle_github_webhook(
     # Processor 처리
     processor = platform_router.route(platform)
     validated: ValidatedEvent = processor.process(request.headers, payload)
+
+    # Persist
+    await save_event(session, validated, payload)
 
     return JSONResponse(content=validated.dict()) 

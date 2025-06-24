@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 from datetime import datetime, timezone
+import os
 
 import pytest
 from fastapi.testclient import TestClient
@@ -22,6 +23,7 @@ def _signature(body: bytes) -> str:
 @pytest.fixture(autouse=True)
 def override_settings(monkeypatch):
     monkeypatch.setenv("GITHUB_WEBHOOK_SECRET", SECRET)
+    monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
     # Clear cached settings so new env var takes effect
     get_settings.cache_clear()
     yield

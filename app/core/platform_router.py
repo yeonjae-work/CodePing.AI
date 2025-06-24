@@ -11,6 +11,8 @@ from typing import Mapping
 
 from fastapi import HTTPException, status
 
+from app.core.processor import GitHubPushProcessor, IProcessor
+
 
 class PlatformRouter:
     """Hybrid router that detects the SCM platform and delegates processing.
@@ -34,15 +36,15 @@ class PlatformRouter:
     # ---------------------------------------------------------------------
     # 라우팅 로직
     # ---------------------------------------------------------------------
-    def route(self, platform: str):  # pragma: no cover – stub for future
-        """플랫폼별 프로세서로 라우팅.
+    def route(self, platform: str) -> IProcessor:  # pragma: no cover
+        """플랫폼별 프로세서 인스턴스를 반환한다.
 
-        현재는 GitHub Built-in Processor 로 직행한다.
-        확장 시 `ExtensionPluginManager` 와 연동될 예정.
+        추후 플러그인 매니저와 연결되어 동적으로 로드될 수 있다.
         """
-        if platform not in self.CORE_PLATFORMS:
-            raise HTTPException(
-                status_code=status.HTTP_501_NOT_IMPLEMENTED,
-                detail=f"Platform '{platform}' not supported yet.",
-            )
-        return "github_processor"  # placeholder 
+        if platform == "github":
+            return GitHubPushProcessor()
+
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail=f"Platform '{platform}' not supported yet.",
+        ) 

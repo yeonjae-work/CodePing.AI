@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import hmac
 import hashlib
-from datetime import datetime, timezone
-from typing import Any, Dict, List
 import json
+from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
 from app.config import Settings, get_settings
-from app.models.github import CommitInfo, ValidatedEvent
+from app.models.github import ValidatedEvent
 from app.core.platform_router import PlatformRouter
 
 router = APIRouter(tags=["webhook"])
@@ -66,42 +65,8 @@ async def handle_github_webhook(
 
     payload: Dict[str, Any] = json.loads(body.decode())
 
-    # Minimal JSON schema validation
-    required_paths = [
-        ("repository", "full_name"),
-        ("pusher", "name"),
-        ("commits",),
-    ]
-    for path in required_paths:
-        ptr = payload
-        for key in path:
-            if key not in ptr:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Missing field: {'.'.join(path)}",
-                )
-            ptr = ptr[key]
-
-    # Build CommitInfo list
-    commits: List[CommitInfo] = []
-    for commit in payload["commits"]:
-        commits.append(
-            CommitInfo(
-                id=commit["id"],
-                message=commit.get("message", ""),
-                url=commit.get("url", ""),
-                added=commit.get("added", []),
-                removed=commit.get("removed", []),
-                modified=commit.get("modified", []),
-            )
-        )
-
-    validated = ValidatedEvent(
-        repository=payload["repository"]["full_name"],
-        ref=payload.get("ref", ""),
-        pusher=payload["pusher"].get("name", ""),
-        commits=commits,
-        timestamp=datetime.now(tz=timezone.utc),
-    )
+    # Processor 처리
+    processor = platform_router.route(platform)
+    validated: ValidatedEvent = processor.process(request.headers, payload)
 
     return JSONResponse(content=validated.dict()) 

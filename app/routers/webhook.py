@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import Settings, get_settings
 from app.models.github import CommitInfo, ValidatedEvent
+from app.core.platform_router import PlatformRouter
 
 router = APIRouter(tags=["webhook"])
 
@@ -48,6 +49,13 @@ async def handle_github_webhook(
     body: bytes = Depends(_verify_github_signature),
 ) -> JSONResponse:
     """Handle GitHub push webhook and return a validated event structure."""
+
+    # Detect platform using dedicated router (extensible)
+    platform_router = PlatformRouter()
+    platform = platform_router.detect_platform(request.headers)
+
+    if platform != "github":
+        raise HTTPException(status_code=501, detail=f"Platform '{platform}' not supported yet")
 
     if x_github_event != "push":
         # Unsupported event for now

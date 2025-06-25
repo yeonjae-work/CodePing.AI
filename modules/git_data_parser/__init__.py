@@ -1,0 +1,1 @@
+"""Git data parsing and diff fetching module.""" 

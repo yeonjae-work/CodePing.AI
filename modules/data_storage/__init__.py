@@ -1,0 +1,1 @@
+"""Data storage module for persisting events and diffs.""" 

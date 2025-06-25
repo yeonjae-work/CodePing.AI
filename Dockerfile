@@ -25,7 +25,8 @@ EXPOSE 8000
 
 # Default environment (can be overridden)
 ENV GITHUB_WEBHOOK_SECRET=mydevsecret \
-    DATABASE_URL=sqlite+aiosqlite:///./dev.db
+    DATABASE_URL=sqlite+aiosqlite:///./dev.db \
+    CELERY_ALWAYS_EAGER=true
 
 # Launch application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"] 

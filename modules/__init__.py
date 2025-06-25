@@ -1,0 +1,1 @@
+"""Modular monolith modules package.""" 

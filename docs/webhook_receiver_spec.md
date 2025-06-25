@@ -1,163 +1,390 @@
-# WebhookReceiver 기술 명세서 (Phase 1: GitHub Push 전용)
+# WebhookReceiver 모듈 기술 명세서
 
 ## 1. 개요
-GitHub **Push** 이벤트를 받아 _원본 Webhook JSON 전체_ 와 주요 메타데이터를 SSOT(DB/S3)에 저장한다. HTTP 응답은 200 ms 내로 반환하기 위해 Celery 기반 비동기 파이프라인을 사용한다.
+WebhookReceiver 모듈은 GitHub Webhook 이벤트를 수신하고 검증하여 비동기 처리를 위해 Celery 큐에 전달하는 역할을 담당합니다. HTTP 응답 시간을 200ms 이내로 유지하기 위해 최소한의 검증만 수행하고 실제 데이터 처리는 백그라운드로 위임합니다.
 
-**새로운 모듈형 모놀리스 구조**로 설계되어 향후 마이크로서비스 분리를 준비하고 있다.
+## 2. 모듈 구조
+```
+modules/webhook_receiver/
+├── __init__.py           # 모듈 초기화
+├── router.py            # FastAPI 라우터 및 엔드포인트
+├── service.py           # 비즈니스 로직 (플랫폼 감지, 라우팅)
+└── tasks.py             # Celery 비동기 태스크
+```
 
-## 2. 모듈 구성 (신규 구조)
-| 경로 | 역할 |
-|------|------|
-| `modules/webhook_receiver/router.py` | FastAPI 엔드포인트 / 서명 검증 / Celery 큐잉 |
-| `modules/webhook_receiver/service.py` | 플랫폼 판별·프로세서 라우팅 |
-| `modules/git_data_parser/service.py` | GitHub Push 파싱 → `ValidatedEvent` 생성 |
-| `modules/webhook_receiver/tasks.py` | Celery 태스크 – diff 수집·압축·저장 |
-| `modules/data_storage/models.py` | ORM(Event) – SSOT 스키마 정의 |
-| `shared/config/celery_app.py` | Celery 인스턴스·브로커 설정 |
-| `shared/config/settings.py` | 환경변수 및 설정 관리 |
-| `shared/config/database.py` | 데이터베이스 연결 관리 |
+## 3. 핵심 책임
+### 3-1. HTTP 엔드포인트 제공 (`router.py`)
+- `POST /webhook/` 엔드포인트 처리
+- GitHub 서명 검증 (X-Hub-Signature-256)
+- 요청 헤더 및 페이로드 파싱
+- 빠른 HTTP 응답 (200ms 이내)
 
-## 3. 요청-응답 흐름
+### 3-2. 플랫폼 감지 및 라우팅 (`service.py`)
+- 요청 헤더 기반 플랫폼 감지 (GitHub/GitLab/Bitbucket)
+- 이벤트 타입 확인 (push/pull_request 등)
+- 적절한 프로세서로 라우팅
+
+### 3-3. 비동기 처리 큐잉 (`tasks.py`)
+- Celery 태스크로 백그라운드 처리 위임
+- 실패 시 재시도 로직
+- 태스크 상태 모니터링
+
+## 4. 모듈 내부 흐름 시각화
+
+### 4-1. WebhookReceiver 모듈 내부 흐름
+```mermaid
+graph TD
+    A["GitHub Webhook<br/>POST /webhook/"] --> B["router.py<br/>webhook_endpoint()"]
+    
+    B --> C["요청 헤더 추출<br/>X-Hub-Signature-256, X-GitHub-Event"]
+    C --> D["요청 본문 읽기<br/>await request.body()"]
+    D --> E{"서명 검증<br/>verify_github_signature()"}
+    
+    E -->|실패| F["401 Unauthorized<br/>Invalid signature"]
+    E -->|성공| G["JSON 파싱<br/>await request.json()"]
+    
+    G -->|파싱 오류| H["400 Bad Request<br/>Malformed JSON"]
+    G -->|성공| I["service.py<br/>WebhookService.process_webhook()"]
+    
+    I --> J["detect_platform()<br/>헤더 기반 플랫폼 감지"]
+    J -->|x-github-event| K["GitHub 플랫폼 확인"]
+    J -->|x-gitlab-event| L["GitLab 플랫폼"]
+    J -->|x-event-key| M["Bitbucket 플랫폼"]
+    J -->|알 수 없음| N["501 Not Implemented<br/>Unsupported platform"]
+    
+    K --> O["이벤트 타입 확인<br/>(push, pull_request, ping)"]
+    O -->|지원하지 않는 이벤트| P["INFO 로그 기록<br/>이벤트 무시"]
+    O -->|지원 이벤트| Q["기본 이벤트 정보 추출<br/>(repository, commits, event_type)"]
+    
+    Q --> R["Celery 태스크 큐잉<br/>send_task('process_webhook_async')"]
+    R --> S["200 OK 응답<br/>task_id 포함"]
+    
+    P --> T["200 OK 응답<br/>무시됨 표시"]
+    
+    style B fill:#e3f2fd
+    style I fill:#f3e5f5
+    style E fill:#ffebee
+    style J fill:#f1f8e9
+    style R fill:#e8f5e8
+```
+
+### 4-2. WebhookReceiver 파일별 책임 분담
+```mermaid
+graph LR
+    subgraph "router.py - HTTP 인터페이스 계층"
+        A["POST /webhook/"] --> B["헤더 추출<br/>(signature, event_type)"]
+        B --> C["요청 본문 읽기<br/>(raw bytes)"]
+        C --> D["서명 검증<br/>(HMAC-SHA256)"]
+        D --> E["JSON 파싱<br/>(payload dict)"]
+        E --> F["WebhookService 호출"]
+        F --> G["HTTP 응답 반환<br/>(200/400/401/501)"]
+    end
+    
+    subgraph "service.py - 비즈니스 로직 계층"
+        H["process_webhook()"] --> I["플랫폼 감지<br/>(GitHub/GitLab/Bitbucket)"]
+        I --> J["이벤트 타입 검증<br/>(push/pull_request/ping)"]
+        J --> K["이벤트 정보 추출<br/>(repo, commits, etc)"]
+        K --> L["Celery 태스크 큐잉"]
+    end
+    
+    subgraph "tasks.py - 태스크 정의"
+        M["process_webhook_async()"] --> N["태스크 정의만<br/>(실제 구현은 다른 모듈)"]
+        N --> O["재시도 로직<br/>(3회, 60초 간격)"]
+    end
+    
+    F --> H
+    L --> M
+    
+    style A fill:#e3f2fd
+    style H fill:#f3e5f5
+    style M fill:#fff8e1
+```
+
+### 4-3. WebhookReceiver 시퀀스 다이어그램
 ```mermaid
 sequenceDiagram
-    participant GH as "GitHub"
-    participant API as "FastAPI /webhook/"
-    participant WR as "WebhookReceiver\nService"
-    participant GDP as "GitDataParser\nService"
-    participant Celery as "Celery Broker"
-    participant Worker as "Celery Worker\n(webhook_receiver.tasks)"
-    participant DS as "DataStorage\nService"
-    participant DB as "DB / S3"
+    participant Client as GitHub
+    participant Router as router.py
+    participant Service as service.py
+    participant Celery as Celery Queue
+    participant Tasks as tasks.py
 
-    GH->>API: HTTP POST Push event
-    API->>API: Verify X-Hub-Signature-256
-    API->>WR: process_webhook(headers, body, event_type)
-    WR->>WR: detect_platform(headers)
-    WR->>GDP: parse_github_push(payload)
-    GDP-->>WR: ValidatedEvent (Pydantic)
-    WR->>Celery: send_task("process_webhook_async", ...)
-    API-->>GH: 200 OK + ValidatedEvent
-
-    Worker->>GH: GET /repos/:owner/:repo/commits/:sha (diff)
-    Worker->>Worker: gzip & size check
-    alt <= 256 KB
-        Worker->>DS: save_event(diff_data=blob)
-        DS->>DB: INSERT Event (diff_data BLOB)
-    else > 256 KB
-        Worker->>S3: PUT diff.gz
-        Worker->>DS: save_event(diff_url=s3_url)
-        DS->>DB: INSERT Event (diff_url)
+    Client->>Router: POST /webhook/ + X-Hub-Signature-256
+    Router->>Router: 헤더 추출 (signature, event_type)
+    Router->>Router: 요청 본문 읽기 (raw bytes)
+    Router->>Router: verify_github_signature()
+    
+    alt signature invalid
+        Router-->>Client: 401 Unauthorized
+    else signature valid
+        Router->>Router: JSON 파싱 (payload dict)
+        alt JSON invalid
+            Router-->>Client: 400 Bad Request
+        else JSON valid
+            Router->>Service: process_webhook(headers, payload, event_type)
+            Service->>Service: detect_platform(headers)
+            
+            alt platform unsupported
+                Service-->>Router: UnsupportedPlatformError
+                Router-->>Client: 501 Not Implemented
+            else platform supported
+                Service->>Service: 이벤트 타입 검증 (push/pull_request/ping)
+                
+                alt unsupported event
+                    Service->>Service: INFO 로그 기록
+                    Service-->>Router: 이벤트 무시됨
+                    Router-->>Client: 200 OK (ignored)
+                else supported event
+                    Service->>Service: 기본 이벤트 정보 추출
+                    Service->>Celery: send_task("process_webhook_async", args)
+                    Service-->>Router: task_id
+                    Router-->>Client: 200 OK + task_id
+                    
+                    Note over Celery,Tasks: 백그라운드 처리는 다른 모듈 담당
+                    Celery->>Tasks: process_webhook_async() 큐잉
+                end
+            end
+        end
     end
-    Worker-->>Celery: ack
 ```
 
-## 4. 인터페이스 정의
-| 항목 | 내용 |
-|------|------|
-| HTTP | `POST /webhook/` |
-| 필수 헤더 | `X-Hub-Signature-256`, `X-GitHub-Event: push`, `Content-Type: application/json` |
-| Body | GitHub Push 이벤트 원본 JSON |
-| 응답 (200) | `ValidatedEvent` – repo, ref, pusher, commits, timestamp 등 |
-| 오류 코드 | 401 서명 실패, 400 잘못된 JSON, 501 비지원 플랫폼 |
+### 4-4. WebhookReceiver 모듈 특성
+**단일 책임 원칙**:
+- HTTP 요청 수신 및 검증에만 집중
+- 실제 데이터 처리는 다른 모듈에 위임
+- 200ms 이내 빠른 응답으로 GitHub 타임아웃 방지
 
-## 5. 내부 로직 요약
-1. **서명 검증** → HMAC-SHA256 비교 (`modules/webhook_receiver/router.py`)
-2. **플랫폼 판별** → `WebhookService.process_webhook()` 
-3. **Processor 실행** → GitDataParserService가 `ValidatedEvent` 리턴
-4. **비동기 Off-load** → `celery_app.send_task("process_webhook_async", …)`
-5. **Celery 태스크** → diff 다운로드·압축·DB/S3 저장
-6. **로깅** → 모듈별 독립적인 `logging` 사용
+**견고한 입력 검증**:
+- HMAC-SHA256 서명 검증으로 보안 확보
+- 플랫폼별 헤더 패턴 감지
+- JSON 파싱 오류 및 잘못된 이벤트 타입 처리
 
-## 6. 데이터 모델 (`Event` - 신규 구조)
-| 컬럼 | 타입 | 설명 |
-|------|------|------|
-| `payload` | JSON | 원본 Webhook 전체 |
-| `diff_data` | BLOB | gzip(≤ 256 KB) |
-| `diff_url` | VARCHAR | S3 경로(> 256 KB) |
-| `added_lines / deleted_lines / files_changed` | INT | diff 통계 |
-| `repository / commit_sha` | INDEX | 조회·중복 방지 (UNIQUE 제약) |
-| 기타 | event_type, author_name, author_email, created_at |
+**확장 가능한 설계**:
+- 새로운 플랫폼 추가 시 `detect_platform()` 함수만 수정
+- 이벤트 타입별 필터링으로 불필요한 처리 방지
+- Celery 큐를 통한 백프레셰 분리
 
-**중복 방지**: `(repository, commit_sha)` UNIQUE 제약으로 동일 커밋 재처리 방지
+## 5. API 인터페이스
 
-## 7. 환경 변수
-| 변수 | 설명 |
-|------|------|
-| `GITHUB_WEBHOOK_SECRET` | HMAC 검증 키 |
-| `DATABASE_URL` | SQLAlchemy URL (기본: sqlite+aiosqlite:///./dev.db) |
-| `CELERY_BROKER_URL` | Redis/RabbitMQ 등 브로커 |
-| `CELERY_ALWAYS_EAGER` | 로컬 동기 실행 플래그 (기본: true) |
-| `AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_S3_BUCKET` | diff S3 업로드 |
-| `GITHUB_TOKEN` | GitHub Commit API 호출 인증(선택) |
+### 5-1. Webhook 엔드포인트
+```http
+POST /webhook/
+Content-Type: application/json
+X-Hub-Signature-256: sha256=<signature>
+X-GitHub-Event: push
 
-## 8. 예외 처리 & 보안
-* 서명 불일치 → 401 Unauthorized
-* JSON 파싱 오류 → 400 Bad Request  
-* 플랫폼 미지원 → 501 Not Implemented
-* Celery 태스크 실패 → 자동 재시도(back-off)
-* 외부 호출 `timeout=20s` 및 예외 로깅
-* S3 업로드 ACL = private
-* **대소문자 무관 헤더 처리**: X-GitHub-Event, x-github-event 모두 지원
+{
+  "ref": "refs/heads/main",
+  "repository": {...},
+  "commits": [...],
+  ...
+}
+```
 
-## 9. 성능·확장성
-* HTTP 레이어 p99 < 200 ms (검증·큐잉만 수행)
-* 워커 수평 확장으로 TPS 선형 확장
-* diff > 256 KB → S3 off-load 로 DB 용량 관리
-* **모듈형 구조**: 각 모듈을 독립적인 마이크로서비스로 분리 가능
-* 자동 라우터 발견: `modules/` 하위 폴더에서 `router.py` 자동 로드
+### 5-2. 응답 형식
+**성공 (200 OK)**:
+```json
+{
+  "status": "accepted",
+  "event_type": "push",
+  "repository": "owner/repo",
+  "commits_count": 3,
+  "task_id": "celery-task-uuid"
+}
+```
 
-## 10. 테스트 전략
-| 구분 | 파일/절차 | 검증 내용 |
-|------|-----------|-----------|
-| 단위 | `tests/modules/webhook_receiver/test_webhook_receiver.py` | 서명 OK/NG, 응답 스키마, JSON 오류 처리 |
-| 통합 | `tests/modules/webhook_receiver/test_integration.py` | 실제 GitHub 페이로드 처리 |
-| E2E | 로컬 테스트 가이드 | Webhook → Celery → DB/S3 전 과정 |
+**오류 응답**:
+- `400 Bad Request`: JSON 파싱 오류
+- `401 Unauthorized`: 서명 검증 실패
+- `501 Not Implemented`: 지원하지 않는 플랫폼/이벤트
 
-**테스트 실행**:
+## 6. 서명 검증
+
+### 6-1. GitHub HMAC-SHA256 검증
+```python
+def verify_github_signature(payload: bytes, signature: str, secret: str) -> bool:
+    expected = hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(f"sha256={expected}", signature)
+```
+
+### 6-2. 보안 고려사항
+- 타이밍 공격 방지 (`hmac.compare_digest` 사용)
+- 서명 헤더 대소문자 무관 처리
+- 빈 페이로드 및 잘못된 인코딩 처리
+
+## 7. 플랫폼 감지 로직
+
+### 7-1. 헤더 기반 플랫폼 식별
+```python
+def detect_platform(headers: dict) -> str:
+    headers_lower = {k.lower(): v for k, v in headers.items()}
+    
+    if 'x-github-event' in headers_lower:
+        return 'github'
+    elif 'x-gitlab-event' in headers_lower:
+        return 'gitlab'
+    elif 'x-event-key' in headers_lower:
+        return 'bitbucket'
+    else:
+        raise UnsupportedPlatformError("Unknown webhook platform")
+```
+
+### 7-2. 이벤트 타입 필터링
+- **지원 이벤트**: push, pull_request, ping
+- **무시 이벤트**: star, fork, watch 등
+- **오류 처리**: 알 수 없는 이벤트는 로그만 기록
+
+## 8. Celery 통합
+
+### 8-1. 태스크 정의 (`tasks.py`)
+```python
+@celery_app.task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_kwargs={'max_retries': 3, 'countdown': 60}
+)
+def process_webhook_async(self, platform: str, event_type: str, payload: dict):
+    """비동기 Webhook 처리"""
+    try:
+        # 실제 데이터 파싱 및 저장 로직 호출
+        return {"status": "completed"}
+    except Exception as exc:
+        self.retry(exc=exc)
+```
+
+### 8-2. 큐 설정
+- **큐 이름**: `webhook_queue`
+- **우선순위**: push > pull_request > ping
+- **동시 실행**: worker당 4개 태스크
+- **타임아웃**: 300초
+
+## 9. 설정 및 환경변수
+
+### 9-1. 필수 환경변수
 ```bash
-# WebhookReceiver 모듈만
-$ python -m pytest tests/modules/webhook_receiver/ -v
+# GitHub Webhook 서명 검증
+GITHUB_WEBHOOK_SECRET=your_webhook_secret
 
-# 전체 모듈 테스트  
-$ python -m pytest tests/modules/ -v
+# Celery 브로커 설정
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+
+# 개발/테스트 모드
+CELERY_ALWAYS_EAGER=true  # 동기 실행 (테스트용)
 ```
 
-## 11. 모듈형 아키텍처 특징
+### 9-2. 선택적 설정
+```bash
+# 로깅 레벨
+LOG_LEVEL=INFO
 
-### 11-1. 재사용성 중심 설계
-- 각 모듈은 **단일 책임 원칙** 준수
-- **인터페이스 기반** 모듈 간 통신
-- 다른 프로젝트에서 **독립적으로 사용 가능**
-
-### 11-2. 확장성
-```
-modules/
-├── webhook_receiver/    # 현재 구현됨
-├── git_data_parser/     # 현재 구현됨  
-├── data_storage/        # 현재 구현됨
-├── diff_analyzer/       # 향후 추가
-├── schedule_manager/    # 향후 추가 (08:00 KST 스케줄러)
-├── slack_notifier/      # 향후 추가
-└── activity_analyzer/   # 향후 추가
+# 헬스체크 설정
+HEALTH_CHECK_ENABLED=true
 ```
 
-### 11-3. 마이크로서비스 준비
-- 각 모듈은 독립적인 **Docker 컨테이너**로 배포 가능
-- **shared/** 영역을 통한 공통 설정 관리
-- **infrastructure/** 영역을 통한 외부 서비스 추상화
+## 10. 에러 처리 및 로깅
 
-## 12. 향후 로드맵
-1. **Phase 2**: 
-   - GitLab·Bitbucket Processor 추가 (PlatformRouter 확장)
-   - SlackNotifier & DailySummaryScheduler (08:00 KST)
-   - `schedule_manager` 모듈 구현
-2. **Phase 3**:
-   - Alembic 마이그레이션 자동화
-   - OpenTelemetry tracing, Flower 대시보드 연동
-   - 모듈별 마이크로서비스 분리
+### 10-1. 예외 계층
+```python
+class WebhookReceiverError(Exception):
+    """WebhookReceiver 모듈 기본 예외"""
 
-## 13. 메모리 기반 요구사항 반영
-- **Daily summary**: 매일 08:00 Asia/Seoul 시간대에 Slack 알림 전송
-- **Diff 저장 정책**: gzip ≤256KB는 DB 저장, 초과 시 S3 업로드 후 URL 저장  
-- **중복 방지**: (repository, commit_sha) 조합으로 UNIQUE 제약
-- **SSOT**: Complete Webhook Data 원본 JSON 보존 
+class InvalidSignatureError(WebhookReceiverError):
+    """서명 검증 실패"""
+
+class UnsupportedPlatformError(WebhookReceiverError):
+    """지원하지 않는 플랫폼"""
+
+class PayloadParsingError(WebhookReceiverError):
+    """페이로드 파싱 오류"""
+```
+
+### 10-2. 로깅 정책
+- **INFO**: 정상 요청 처리
+- **WARNING**: 지원하지 않는 이벤트
+- **ERROR**: 서명 실패, 파싱 오류
+- **DEBUG**: 상세 페이로드 정보 (개발 모드만)
+
+## 11. 성능 및 모니터링
+
+### 11-1. 성능 지표
+- **응답 시간**: p99 < 200ms
+- **처리량**: 초당 100 요청 처리 가능
+- **메모리 사용량**: 요청당 < 10MB
+
+### 11-2. 헬스체크
+```http
+GET /health
+```
+응답:
+```json
+{
+  "status": "healthy",
+  "module": "webhook_receiver",
+  "celery_broker": "connected",
+  "timestamp": "2024-01-01T00:00:00Z"
+}
+```
+
+## 12. 테스트
+
+### 12-1. 단위 테스트
+```bash
+# WebhookReceiver 모듈 테스트만 실행
+python -m pytest tests/modules/webhook_receiver/test_webhook_receiver.py -v
+```
+
+**테스트 케이스**:
+- 유효한 GitHub 서명 검증
+- 잘못된 서명 거부
+- JSON 파싱 오류 처리
+- 지원하지 않는 이벤트 처리
+- 헬스체크 엔드포인트
+
+### 12-2. 통합 테스트
+```bash
+# 실제 GitHub 페이로드로 통합 테스트
+python -m pytest tests/modules/webhook_receiver/test_integration.py -v
+```
+
+**테스트 케이스**:
+- 실제 GitHub Push 페이로드 처리
+- Force Push 이벤트 처리
+- Ping 이벤트 처리
+- 대용량 페이로드 처리
+
+## 13. 배포 고려사항
+
+### 13-1. Docker 설정
+```dockerfile
+# WebhookReceiver 모듈 전용 컨테이너
+FROM python:3.12-slim
+COPY modules/webhook_receiver /app/modules/webhook_receiver
+COPY shared /app/shared
+```
+
+### 13-2. 수평 확장
+- Stateless 설계로 인스턴스 자유롭게 확장 가능
+- 로드 밸런서를 통한 트래픽 분산
+- Celery worker 별도 확장 가능
+
+### 13-3. 모니터링
+- Prometheus 메트릭 수집
+- Grafana 대시보드
+- Sentry 오류 추적
+
+## 14. 향후 개선사항
+
+### 14-1. 단기 계획
+- GitLab, Bitbucket 지원 추가
+- Webhook 재전송 메커니즘 구현
+- 상세한 메트릭 수집
+
+### 14-2. 장기 계획
+- OpenTelemetry 분산 추적
+- gRPC 인터페이스 추가
+- 마이크로서비스 분리 

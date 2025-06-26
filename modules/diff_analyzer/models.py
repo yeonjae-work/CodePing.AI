@@ -6,11 +6,15 @@ DiffAnalyzer 모듈 데이터 모델
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Any, Union
 from pydantic import BaseModel, Field, ConfigDict
+
+# Git data parser models import
+from modules.git_data_parser.models import ParsedWebhookData, FileChange
 
 
 class ImpactLevel(Enum):
@@ -260,6 +264,15 @@ class ParsedDiff(BaseModel):
     commit_sha: str
     file_changes: List[Any]  # FileChange 객체들
     diff_stats: Any  # DiffStats 객체
+    
+    # 기본 통계 (diff_stats에서 추출)
+    @property
+    def total_additions(self) -> int:
+        return getattr(self.diff_stats, 'total_additions', 0)
+    
+    @property 
+    def total_deletions(self) -> int:
+        return getattr(self.diff_stats, 'total_deletions', 0)
     
     model_config = ConfigDict(
         from_attributes=True,

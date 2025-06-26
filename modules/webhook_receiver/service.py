@@ -38,9 +38,10 @@ class PlatformDetector:
 class WebhookService:
     """Main webhook processing orchestrator."""
     
-    def __init__(self):
+    def __init__(self, git_parser=None, task_queue=None):
         self.platform_detector = PlatformDetector()
-        self.git_parser = GitDataParserService()
+        self.git_parser = git_parser or GitDataParserService()
+        self.task_queue = task_queue or celery_app
     
     async def process_webhook(
         self,
@@ -78,7 +79,7 @@ class WebhookService:
         validated_event = self.git_parser.parse_github_push(headers, payload)
         
         # Enqueue background processing
-        celery_app.send_task(
+        self.task_queue.send_task(
             "webhook_receiver.process_webhook_async",
             args=[payload, headers],
         )

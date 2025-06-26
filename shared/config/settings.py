@@ -30,6 +30,28 @@ class Settings(BaseSettings):
         description="GitHub API token for fetching commit data"
     )
     
+    # WebhookReceiver Testing
+    webhook_test_mode: bool = Field(
+        default=False,
+        description="Test WebhookReceiver module only (no storage)"
+    )
+    
+    # Notion API Integration
+    notion_token: Optional[str] = Field(
+        default=None,
+        description="Notion API token for documentation sync"
+    )
+    
+    notion_sync_interval_minutes: int = Field(
+        default=30,
+        description="Interval for automatic Notion sync in minutes"
+    )
+    
+    notion_auto_update_rules: bool = Field(
+        default=True,
+        description="Automatically update Cursor rules from Notion"
+    )
+    
     # Celery
     celery_broker_url: str = Field(
         default="redis://localhost:6379/0",
@@ -39,6 +61,11 @@ class Settings(BaseSettings):
     celery_always_eager: bool = Field(
         default=False,
         description="Execute Celery tasks synchronously for testing"
+    )
+    
+    celery_eager_propagates_exceptions: bool = Field(
+        default=True,
+        description="Propagate exceptions when using eager mode"
     )
     
     # AWS S3

@@ -45,6 +45,7 @@ from .exceptions import (
     StructuralAnalysisError, ASTParsingError, BinaryFileAnalysisError,
     LargeFileAnalysisError
 )
+from shared.utils.logging import ModuleIOLogger
 
 logger = logging.getLogger(__name__)
 
@@ -590,6 +591,119 @@ class DiffAnalyzer:
         self.language_analyzer = LanguageAnalyzer()
         self.complexity_analyzer = CodeComplexityAnalyzer()
         self.structural_analyzer = StructuralChangeAnalyzer()
+        
+        # 입출력 로거 설정
+        self.io_logger = ModuleIOLogger("DiffAnalyzer")
+    
+    def analyze_webhook_data(self, parsed_data: 'ParsedWebhookData') -> DiffAnalysisResult:
+        """
+        GitDataParser에서 파싱된 webhook 데이터를 심층 분석
+        
+        Args:
+            parsed_data: GitDataParser에서 파싱된 webhook 데이터
+            
+        Returns:
+            DiffAnalysisResult: 심층 분석 결과
+        """
+        # 입력 로깅
+        self.io_logger.log_input(
+            "analyze_webhook_data",
+            data=parsed_data,
+            metadata={
+                "repository": parsed_data.repository,
+                "commits_count": len(parsed_data.commits),
+                "files_changed": parsed_data.diff_stats.files_changed,
+                "total_additions": parsed_data.diff_stats.total_additions,
+                "total_deletions": parsed_data.diff_stats.total_deletions,
+                "file_types": list(set(fc.file_type for fc in parsed_data.file_changes if hasattr(fc, 'file_type') and fc.file_type))
+            }
+        )
+        
+        start_time = time.time()
+        
+        try:
+            logger.info(f"🔍 DiffAnalyzer: Starting analysis for {parsed_data.repository}")
+            
+            # CommitMetadata 생성 (필수 필드 포함)
+            first_commit = parsed_data.commits[0] if parsed_data.commits else None
+            commit_metadata = CommitMetadata(
+                sha=first_commit.sha if first_commit else "unknown",
+                message=first_commit.message if first_commit else "No commit message",
+                author_name=first_commit.author.name if first_commit and first_commit.author else "Unknown",
+                author_email=first_commit.author.email if first_commit and first_commit.author else "unknown@example.com",
+                repository_name=parsed_data.repository,
+                timestamp=parsed_data.timestamp
+            )
+            
+            # ParsedDiff 객체 생성
+            parsed_diff = ParsedDiff(
+                repository_name=parsed_data.repository,
+                commit_sha=commit_metadata.sha,
+                file_changes=parsed_data.file_changes,
+                diff_stats=parsed_data.diff_stats
+            )
+            
+            # 기존 analyze 메서드 호출
+            result = self.analyze(parsed_diff, commit_metadata)
+            
+            # 출력 로깅
+            self.io_logger.log_output(
+                "analyze_webhook_data",
+                data=result,
+                metadata={
+                    "repository": parsed_data.repository,
+                    "analysis_success": True,
+                    "files_analyzed": result.total_files_changed,
+                    "complexity_delta": result.complexity_delta,
+                    "supported_languages": result.supported_languages,
+                    "binary_files_count": len(result.binary_files_changed),
+                    "analysis_duration_seconds": result.analysis_duration_seconds
+                }
+            )
+            
+            # 분석 완료 로그
+            logger.info(
+                f"✅ DiffAnalyzer: Analysis completed for {parsed_data.repository} "
+                f"(files={result.total_files_changed}, complexity_delta={result.complexity_delta:.2f}, "
+                f"duration={result.analysis_duration_seconds:.3f}s)"
+            )
+            
+            return result
+            
+        except Exception as e:
+            analysis_duration = time.time() - start_time
+            
+            # 오류 로깅
+            self.io_logger.log_error(
+                "analyze_webhook_data",
+                e,
+                metadata={
+                    "repository": parsed_data.repository,
+                    "analysis_duration_seconds": analysis_duration,
+                    "files_attempted": parsed_data.diff_stats.files_changed
+                }
+            )
+            
+            logger.error(f"❌ DiffAnalyzer: Analysis failed for {parsed_data.repository}: {e}")
+            
+            # 실패 시에도 기본 결과 반환
+            first_commit = parsed_data.commits[0] if parsed_data.commits else None
+            return DiffAnalysisResult(
+                commit_sha=first_commit.sha if first_commit else "unknown",
+                repository_name=parsed_data.repository,
+                author_email=first_commit.author.email if first_commit and first_commit.author else "unknown@example.com",
+                timestamp=parsed_data.timestamp,
+                total_files_changed=parsed_data.diff_stats.files_changed,
+                total_additions=parsed_data.diff_stats.total_additions,
+                total_deletions=parsed_data.diff_stats.total_deletions,
+                language_breakdown={},
+                complexity_delta=0.0,
+                analyzed_files=[],
+                binary_files_changed=[],
+                analysis_duration_seconds=analysis_duration,
+                supported_languages=[],
+                unsupported_files_count=0
+            )
     
     def analyze(self, parsed_diff: ParsedDiff, commit_metadata: CommitMetadata,
                 repository_context: Optional[RepositoryContext] = None) -> DiffAnalysisResult:

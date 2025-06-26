@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from contextlib import asynccontextmanager, contextmanager
+from typing import AsyncGenerator, Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
 
 from shared.config.settings import get_settings
 
@@ -27,6 +27,14 @@ def get_engine():
         return create_engine(settings.database_url, echo=False)
 
 
+def get_sync_engine():
+    """Get synchronous SQLAlchemy engine."""
+    settings = get_settings()
+    # 동기 버전의 데이터베이스 URL 사용
+    sync_url = settings.database_url.replace("+aiosqlite", "").replace("+asyncpg", "+psycopg2")
+    return create_engine(sync_url, echo=False)
+
+
 def get_session_maker():
     """Get session maker (sync or async based on engine type)."""
     engine = get_engine()
@@ -35,6 +43,28 @@ def get_session_maker():
         return async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     else:  # sync engine
         return sessionmaker(bind=engine)
+
+
+def get_sync_session_maker():
+    """Get synchronous session maker."""
+    engine = get_sync_engine()
+    return sessionmaker(bind=engine)
+
+
+@contextmanager
+def get_session() -> Generator[Session, None, None]:
+    """Get synchronous database session context manager."""
+    session_maker = get_sync_session_maker()
+    session = session_maker()
+    
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 @asynccontextmanager
@@ -60,4 +90,10 @@ async def create_tables():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     else:  # sync engine
-        Base.metadata.create_all(bind=engine) 
+        Base.metadata.create_all(bind=engine)
+
+
+def create_tables_sync():
+    """Create all database tables synchronously."""
+    engine = get_sync_engine()
+    Base.metadata.create_all(bind=engine) 

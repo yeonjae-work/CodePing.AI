@@ -11,9 +11,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from shared.config.database import create_tables
 from shared.config.settings import get_settings
+from shared.utils.logging import setup_detailed_logging
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Import models to register them with SQLAlchemy
+from modules.data_storage.models import Event
+
+# Configure detailed logging
+setup_detailed_logging()
 logger = logging.getLogger(__name__)
 
 

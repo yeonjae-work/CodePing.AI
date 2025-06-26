@@ -8,13 +8,21 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class Author(BaseModel):
+    """커밋 작성자 정보"""
+    name: str
+    email: str
+    username: Optional[str] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CommitInfo(BaseModel):
     """Commit information extracted from GitHub push event."""
     
     sha: str = Field(..., description="Commit SHA hash")
     message: str = Field(..., description="Commit message")
-    author_name: str = Field(..., description="Author name")
-    author_email: str = Field(..., description="Author email")
+    author: Author = Field(..., description="Author information")
     timestamp: datetime = Field(..., description="Commit timestamp")
     url: str = Field(..., description="GitHub commit URL")
     
@@ -55,6 +63,7 @@ class FileChange(BaseModel):
     status: str = Field(..., description="Change status: added, modified, removed")
     additions: int = Field(default=0, description="Number of lines added")
     deletions: int = Field(default=0, description="Number of lines deleted")
+    file_type: Optional[str] = Field(default=None, description="File type: python, javascript, etc.")
     patch: Optional[str] = Field(default=None, description="Diff patch content")
     
     model_config = ConfigDict(from_attributes=True)
@@ -92,4 +101,29 @@ class GitHubPushPayload(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
         extra="allow"  # Allow additional fields from GitHub
-    ) 
+    )
+
+
+class DiffStats(BaseModel):
+    """Diff 통계 정보"""
+    total_additions: int = Field(default=0, description="Total lines added")
+    total_deletions: int = Field(default=0, description="Total lines deleted")
+    files_changed: int = Field(default=0, description="Total files changed")
+    files_added: int = Field(default=0, description="Files added")
+    files_modified: int = Field(default=0, description="Files modified")
+    files_removed: int = Field(default=0, description="Files removed")
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ParsedWebhookData(BaseModel):
+    """파싱된 webhook 데이터 (MVP 버전)"""
+    repository: str = Field(..., description="Repository full name")
+    ref: str = Field(..., description="Git reference (branch)")
+    pusher: str = Field(..., description="User who pushed")
+    commits: List[CommitInfo] = Field(..., description="List of commits")
+    file_changes: List[FileChange] = Field(default_factory=list, description="File changes")
+    diff_stats: DiffStats = Field(..., description="Diff statistics")
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Parse timestamp")
+    
+    model_config = ConfigDict(from_attributes=True) 

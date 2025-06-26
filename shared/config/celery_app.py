@@ -1,10 +1,15 @@
-"""Celery configuration and app instance."""
+"""Celery application configuration."""
 
 from __future__ import annotations
 
 import os
 import logging
 from typing import Any
+
+from celery import Celery
+from celery.schedules import crontab
+
+from .settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -27,31 +32,49 @@ def create_celery_app():
         return MockCelery()
     
     try:
-        from celery import Celery
+        # Get settings
+        settings = get_settings()
         
-        broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+        # Create Celery app
+        celery_app = Celery("codeping")
         
-        app = Celery(
-            "codeping",
-            broker=broker_url,
-            backend=broker_url,
-            include=["modules.webhook_receiver.tasks"]
-        )
-        
-        # Configuration
-        app.conf.update(
-            task_serializer="json",
-            accept_content=["json"],
-            result_serializer="json",
-            timezone="UTC",
+        # Configure Celery
+        celery_app.conf.update(
+            broker_url=settings.celery_broker_url,
+            task_always_eager=settings.celery_always_eager,
+            task_eager_propagates=settings.celery_eager_propagates_exceptions,
+            
+            # Task discovery
+            include=[
+                "modules.webhook_receiver.tasks",
+                "modules.notion_sync.tasks",
+            ],
+            
+            # Timezone
+            timezone="Asia/Seoul",
             enable_utc=True,
-            task_routes={
-                "webhook_receiver.*": {"queue": "webhook_queue"},
+            
+            # Periodic tasks
+            beat_schedule={
+                "sync-notion-documentation": {
+                    "task": "notion_sync.sync_documentation",
+                    "schedule": crontab(minute=f"*/{settings.notion_sync_interval_minutes}"),
+                },
             },
+            
+            # Task routing
+            task_routes={
+                "webhook_receiver.*": {"queue": "webhook"},
+                "notion_sync.*": {"queue": "notion_sync"},
+            },
+            
+            # Result backend (optional)
+            result_backend=settings.celery_broker_url,
+            result_expires=3600,  # 1 hour
         )
         
-        logger.info("Celery app initialized with broker: %s", broker_url)
-        return app
+        logger.info("Celery app initialized with broker: %s", settings.celery_broker_url)
+        return celery_app
         
     except ImportError:
         logger.warning("Celery not available, using mock")

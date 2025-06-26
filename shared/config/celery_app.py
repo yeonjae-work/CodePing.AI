@@ -62,11 +62,11 @@ def create_celery_app():
                 },
             },
             
-            # Task routing
-            task_routes={
-                "webhook_receiver.*": {"queue": "webhook"},
-                "notion_sync.*": {"queue": "notion_sync"},
-            },
+            # Task routing - removed for now to use default queue
+            # task_routes={
+            #     "webhook_receiver.*": {"queue": "webhook_queue"},
+            #     "notion_sync.*": {"queue": "celery"},
+            # },
             
             # Result backend (optional)
             result_backend=settings.celery_broker_url,

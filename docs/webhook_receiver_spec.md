@@ -23,6 +23,7 @@ modules/webhook_receiver/
 - 요청 헤더 기반 플랫폼 감지 (GitHub/GitLab/Bitbucket)
 - 이벤트 타입 확인 (push/pull_request 등)
 - 적절한 프로세서로 라우팅
+- **의존성 주입을 통한 재사용성 확보** (git_parser, task_queue 주입 가능)
 
 ### 3-3. 비동기 처리 큐잉 (`tasks.py`)
 - Celery 태스크로 백그라운드 처리 위임
@@ -162,7 +163,8 @@ sequenceDiagram
 **확장 가능한 설계**:
 - 새로운 플랫폼 추가 시 `detect_platform()` 함수만 수정
 - 이벤트 타입별 필터링으로 불필요한 처리 방지
-- Celery 큐를 통한 백프레셰 분리
+- Celery 큐를 통한 백프레셔 분리
+- **의존성 주입을 통한 테스트 용이성 및 재사용성 향상**
 
 ## 5. API 인터페이스
 
@@ -198,9 +200,52 @@ X-GitHub-Event: push
 - `401 Unauthorized`: 서명 검증 실패
 - `501 Not Implemented`: 지원하지 않는 플랫폼/이벤트
 
-## 6. 서명 검증
+## 6. 클래스 구조
 
-### 6-1. GitHub HMAC-SHA256 검증
+### 6-1. WebhookService
+```python
+class WebhookService:
+    """Main webhook processing orchestrator."""
+    
+    def __init__(self, git_parser=None, task_queue=None):
+        """
+        Args:
+            git_parser: Git 데이터 파싱 서비스 (기본값: GitDataParserService)
+            task_queue: 백그라운드 태스크 큐 (기본값: celery_app)
+        """
+        self.platform_detector = PlatformDetector()
+        self.git_parser = git_parser or GitDataParserService()
+        self.task_queue = task_queue or celery_app
+    
+    async def process_webhook(self, headers, body, github_event=None) -> ValidatedEvent:
+        """Webhook 요청 처리 및 백그라운드 태스크 큐잉"""
+
+**재사용성 특징:**
+- `git_parser` 주입으로 다른 파싱 로직 사용 가능
+- `task_queue` 주입으로 다른 큐 시스템 사용 가능  
+- 테스트 시 mock 객체 주입 용이
+- 다른 프로젝트에서 webhook 처리 로직 재사용 가능
+
+### 6-2. PlatformDetector
+```python
+class PlatformDetector:
+    """SCM 플랫폼 감지 유틸리티"""
+    
+    SUPPORTED_PLATFORMS = {"github", "gitlab"}
+    
+    @classmethod
+    def detect_platform(cls, headers: Mapping[str, str]) -> str:
+        """헤더 기반 플랫폼 감지 (대소문자 무시)"""
+```
+
+**재사용성 특징:**
+- 클래스 메서드로 독립적 사용 가능
+- 다른 Git 플랫폼 통합 프로젝트에서 재사용
+- 헤더 패턴 확장 용이
+
+## 7. 서명 검증
+
+### 7-1. GitHub HMAC-SHA256 검증
 ```python
 def verify_github_signature(payload: bytes, signature: str, secret: str) -> bool:
     expected = hmac.new(
@@ -211,14 +256,14 @@ def verify_github_signature(payload: bytes, signature: str, secret: str) -> bool
     return hmac.compare_digest(f"sha256={expected}", signature)
 ```
 
-### 6-2. 보안 고려사항
+### 7-2. 보안 고려사항
 - 타이밍 공격 방지 (`hmac.compare_digest` 사용)
 - 서명 헤더 대소문자 무관 처리
 - 빈 페이로드 및 잘못된 인코딩 처리
 
-## 7. 플랫폼 감지 로직
+## 8. 플랫폼 감지 로직
 
-### 7-1. 헤더 기반 플랫폼 식별
+### 8-1. 헤더 기반 플랫폼 식별
 ```python
 def detect_platform(headers: dict) -> str:
     headers_lower = {k.lower(): v for k, v in headers.items()}
@@ -233,14 +278,14 @@ def detect_platform(headers: dict) -> str:
         raise UnsupportedPlatformError("Unknown webhook platform")
 ```
 
-### 7-2. 이벤트 타입 필터링
+### 8-2. 이벤트 타입 필터링
 - **지원 이벤트**: push, pull_request, ping
 - **무시 이벤트**: star, fork, watch 등
 - **오류 처리**: 알 수 없는 이벤트는 로그만 기록
 
-## 8. Celery 통합
+## 9. Celery 통합
 
-### 8-1. 태스크 정의 (`tasks.py`)
+### 9-1. 태스크 정의 (`tasks.py`)
 ```python
 @celery_app.task(
     bind=True,
@@ -256,15 +301,15 @@ def process_webhook_async(self, platform: str, event_type: str, payload: dict):
         self.retry(exc=exc)
 ```
 
-### 8-2. 큐 설정
+### 9-2. 큐 설정
 - **큐 이름**: `webhook_queue`
 - **우선순위**: push > pull_request > ping
 - **동시 실행**: worker당 4개 태스크
 - **타임아웃**: 300초
 
-## 9. 설정 및 환경변수
+## 10. 설정 및 환경변수
 
-### 9-1. 필수 환경변수
+### 10-1. 필수 환경변수
 ```bash
 # GitHub Webhook 서명 검증
 GITHUB_WEBHOOK_SECRET=your_webhook_secret
@@ -277,7 +322,7 @@ CELERY_RESULT_BACKEND=redis://localhost:6379/0
 CELERY_ALWAYS_EAGER=true  # 동기 실행 (테스트용)
 ```
 
-### 9-2. 선택적 설정
+### 10-2. 선택적 설정
 ```bash
 # 로깅 레벨
 LOG_LEVEL=INFO
@@ -286,9 +331,9 @@ LOG_LEVEL=INFO
 HEALTH_CHECK_ENABLED=true
 ```
 
-## 10. 에러 처리 및 로깅
+## 11. 에러 처리 및 로깅
 
-### 10-1. 예외 계층
+### 11-1. 예외 계층
 ```python
 class WebhookReceiverError(Exception):
     """WebhookReceiver 모듈 기본 예외"""
@@ -303,20 +348,20 @@ class PayloadParsingError(WebhookReceiverError):
     """페이로드 파싱 오류"""
 ```
 
-### 10-2. 로깅 정책
+### 11-2. 로깅 정책
 - **INFO**: 정상 요청 처리
 - **WARNING**: 지원하지 않는 이벤트
 - **ERROR**: 서명 실패, 파싱 오류
 - **DEBUG**: 상세 페이로드 정보 (개발 모드만)
 
-## 11. 성능 및 모니터링
+## 12. 성능 및 모니터링
 
-### 11-1. 성능 지표
+### 12-1. 성능 지표
 - **응답 시간**: p99 < 200ms
 - **처리량**: 초당 100 요청 처리 가능
 - **메모리 사용량**: 요청당 < 10MB
 
-### 11-2. 헬스체크
+### 12-2. 헬스체크
 ```http
 GET /health
 ```
@@ -330,9 +375,9 @@ GET /health
 }
 ```
 
-## 12. 테스트
+## 13. 테스트
 
-### 12-1. 단위 테스트
+### 13-1. 단위 테스트
 ```bash
 # WebhookReceiver 모듈 테스트만 실행
 python -m pytest tests/modules/webhook_receiver/test_webhook_receiver.py -v
@@ -345,7 +390,7 @@ python -m pytest tests/modules/webhook_receiver/test_webhook_receiver.py -v
 - 지원하지 않는 이벤트 처리
 - 헬스체크 엔드포인트
 
-### 12-2. 통합 테스트
+### 13-2. 통합 테스트
 ```bash
 # 실제 GitHub 페이로드로 통합 테스트
 python -m pytest tests/modules/webhook_receiver/test_integration.py -v
@@ -357,9 +402,9 @@ python -m pytest tests/modules/webhook_receiver/test_integration.py -v
 - Ping 이벤트 처리
 - 대용량 페이로드 처리
 
-## 13. 배포 고려사항
+## 14. 배포 고려사항
 
-### 13-1. Docker 설정
+### 14-1. Docker 설정
 ```dockerfile
 # WebhookReceiver 모듈 전용 컨테이너
 FROM python:3.12-slim
@@ -367,24 +412,24 @@ COPY modules/webhook_receiver /app/modules/webhook_receiver
 COPY shared /app/shared
 ```
 
-### 13-2. 수평 확장
+### 14-2. 수평 확장
 - Stateless 설계로 인스턴스 자유롭게 확장 가능
 - 로드 밸런서를 통한 트래픽 분산
 - Celery worker 별도 확장 가능
 
-### 13-3. 모니터링
+### 14-3. 모니터링
 - Prometheus 메트릭 수집
 - Grafana 대시보드
 - Sentry 오류 추적
 
-## 14. 향후 개선사항
+## 15. 향후 개선사항
 
-### 14-1. 단기 계획
+### 15-1. 단기 계획
 - GitLab, Bitbucket 지원 추가
 - Webhook 재전송 메커니즘 구현
 - 상세한 메트릭 수집
 
-### 14-2. 장기 계획
+### 15-2. 장기 계획
 - OpenTelemetry 분산 추적
 - gRPC 인터페이스 추가
 - 마이크로서비스 분리 

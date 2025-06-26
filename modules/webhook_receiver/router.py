@@ -49,6 +49,7 @@ async def _verify_github_signature(
 
 
 @router.post("/", response_model=ValidatedEvent, status_code=status.HTTP_200_OK)
+@router.post("/github", response_model=ValidatedEvent, status_code=status.HTTP_200_OK)
 async def handle_github_webhook(
     request: Request,
     x_github_event: str | None = Header(None, alias="X-GitHub-Event"),

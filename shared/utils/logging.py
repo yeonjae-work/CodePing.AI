@@ -196,35 +196,81 @@ def simplify_data(data: Any, max_depth: int = 3, current_depth: int = 0) -> Any:
     """
     복잡한 데이터 구조를 로깅하기 쉽게 단순화
     """
-    if current_depth >= max_depth:
-        return f"<depth_limit_reached: {type(data).__name__}>"
-    
-    if isinstance(data, dict):
-        simplified = {}
-        for key, value in data.items():
-            if isinstance(key, str) and len(key) > 50:
-                key = key[:47] + "..."
-            simplified[key] = simplify_data(value, max_depth, current_depth + 1)
-        return simplified
-    
-    elif isinstance(data, list):
-        if len(data) > 10:  # 리스트가 너무 길면 처음 10개만 표시
-            return [simplify_data(item, max_depth, current_depth + 1) for item in data[:10]] + [f"... (+{len(data) - 10} more items)"]
-        return [simplify_data(item, max_depth, current_depth + 1) for item in data]
-    
-    elif isinstance(data, str) and len(data) > 200:
-        return data[:197] + "..."
-    
-    elif isinstance(data, bytes) and len(data) > 1000:
-        return f"<bytes: {len(data)} bytes>"
-    
-    elif hasattr(data, '__dict__'):
-        return {
-            "__type": type(data).__name__,
-            **simplify_data(data.__dict__, max_depth, current_depth + 1)
-        }
-    
-    return data
+    try:
+        if current_depth >= max_depth:
+            return f"<depth_limit_reached: {type(data).__name__}>"
+        
+        if isinstance(data, dict):
+            simplified = {}
+            for key, value in data.items():
+                try:
+                    if isinstance(key, str) and len(key) > 50:
+                        key = key[:47] + "..."
+                    simplified[key] = simplify_data(value, max_depth, current_depth + 1)
+                except Exception as e:
+                    simplified[key] = f"<simplify_error: {type(e).__name__}>"
+            return simplified
+        
+        elif isinstance(data, list):
+            try:
+                if len(data) > 10:  # 리스트가 너무 길면 처음 10개만 표시
+                    return [simplify_data(item, max_depth, current_depth + 1) for item in data[:10]] + [f"... (+{len(data) - 10} more items)"]
+                return [simplify_data(item, max_depth, current_depth + 1) for item in data]
+            except Exception:
+                return f"<list_simplify_error: {len(data)} items>"
+        
+        elif isinstance(data, str):
+            if len(data) > 200:
+                return data[:197] + "..."
+            return data
+        
+        elif isinstance(data, bytes):
+            if len(data) > 1000:
+                return f"<bytes: {len(data)} bytes>"
+            return data
+        
+        elif hasattr(data, '__dict__'):
+            try:
+                obj_dict = data.__dict__
+                if isinstance(obj_dict, dict):
+                    simplified_dict = simplify_data(obj_dict, max_depth, current_depth + 1)
+                    if isinstance(simplified_dict, dict):
+                        return {
+                            "__type": type(data).__name__,
+                            **simplified_dict
+                        }
+                    else:
+                        return {
+                            "__type": type(data).__name__,
+                            "__dict_error": str(simplified_dict)
+                        }
+                else:
+                    return {
+                        "__type": type(data).__name__,
+                        "__dict_not_dict": str(type(obj_dict).__name__)
+                    }
+            except Exception as e:
+                return {
+                    "__type": type(data).__name__,
+                    "__dict_access_error": str(e)
+                }
+        
+        # 기본 타입들은 그대로 반환
+        elif isinstance(data, (int, float, bool, type(None))):
+            return data
+        
+        # 기타 타입들은 문자열로 변환
+        else:
+            try:
+                str_repr = str(data)
+                if len(str_repr) > 200:
+                    return str_repr[:197] + "..."
+                return str_repr
+            except Exception:
+                return f"<{type(data).__name__}: repr_error>"
+                
+    except Exception as e:
+        return f"<simplify_error: {type(e).__name__}: {str(e)}>"
 
 
 def log_module_io(

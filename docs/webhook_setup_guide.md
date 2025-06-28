@@ -1,1 +1,226 @@
-# 🔗 웹훅 설정 가이드\n\n## 📋 개요\n\nCodePing.AI 프로젝트에서 `universal_webhook_receiver` 패키지를 사용하여 GitHub 웹훅을 받기 위한 설정 가이드입니다.\n\n## 🚀 사용 가능한 웹훅 엔드포인트\n\n### 1. GitHub 전용 엔드포인트\n```\nPOST /webhook/github\n```\n\n### 2. 범용 웹훅 엔드포인트\n```\nPOST /webhook/\n```\n\n## 🌐 배포 환경별 페이로드 URL\n\n### 1. 로컬 개발 환경\n```\nhttp://localhost:8000/webhook/github\n```\n\n**설정 방법:**\n1. 로컬에서 애플리케이션 실행:\n   ```bash\n   python main.py\n   # 또는\n   uvicorn main:app --host 0.0.0.0 --port 8000 --reload\n   ```\n\n2. ngrok으로 터널링 (GitHub에서 접근 가능하도록):\n   ```bash\n   ngrok http 8000\n   ```\n\n3. GitHub 저장소 웹훅 설정:\n   - Payload URL: `https://your-ngrok-url.ngrok.io/webhook/github`\n   - Content type: `application/json`\n   - Secret: 환경변수 `GITHUB_WEBHOOK_SECRET` 값\n\n### 2. Docker 환경\n```\nhttp://localhost:8000/webhook/github\n```\n\n**설정 방법:**\n1. Docker Compose로 실행:\n   ```bash\n   docker-compose up -d\n   ```\n\n2. 컨테이너 상태 확인:\n   ```bash\n   docker-compose ps\n   curl http://localhost:8000/health\n   ```\n\n3. GitHub 웹훅 설정:\n   - Payload URL: `http://your-server-ip:8000/webhook/github`\n   - 또는 ngrok 사용: `https://your-ngrok-url.ngrok.io/webhook/github`\n\n### 3. 프로덕션 환경 (AWS EC2/클라우드)\n```\nhttps://your-domain.com/webhook/github\n```\n\n**설정 방법:**\n1. 도메인 및 SSL 인증서 설정\n2. 리버스 프록시 (Nginx) 설정:\n   ```nginx\n   server {\n       listen 443 ssl;\n       server_name your-domain.com;\n       \n       location /webhook/ {\n           proxy_pass http://localhost:8000;\n           proxy_set_header Host $host;\n           proxy_set_header X-Real-IP $remote_addr;\n           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n           proxy_set_header X-Forwarded-Proto $scheme;\n       }\n   }\n   ```\n\n3. GitHub 웹훅 설정:\n   - Payload URL: `https://your-domain.com/webhook/github`\n   - Content type: `application/json`\n   - Secret: 프로덕션 환경의 `GITHUB_WEBHOOK_SECRET`\n\n## 🔧 GitHub 웹훅 설정 단계\n\n### 1. GitHub 저장소 설정\n1. 저장소 → Settings → Webhooks → Add webhook\n2. 설정 입력:\n   ```\n   Payload URL: [위에서 선택한 URL]\n   Content type: application/json\n   Secret: [GITHUB_WEBHOOK_SECRET 값]\n   ```\n\n### 2. 이벤트 선택\n권장 이벤트:\n- ✅ **Push events** (필수)\n- ✅ **Pull request events** (선택)\n- ✅ **Release events** (선택)\n\n### 3. 웹훅 활성화\n- ✅ **Active** 체크박스 선택\n\n## 🔐 보안 설정\n\n### 환경변수 설정\n```bash\n# .env 파일\nGITHUB_WEBHOOK_SECRET=your-super-secret-key-here\nGITHUB_TOKEN=ghp_your_github_token_here  # 선택사항\n```\n\n### Secret 생성 방법\n```bash\n# 안전한 시크릿 생성\npython -c \"import secrets; print(secrets.token_urlsafe(32))\"\n```\n\n## 🧪 웹훅 테스트\n\n### 1. 수동 테스트\n```bash\n# GitHub에서 \"Recent Deliveries\"에서 \"Redeliver\" 클릭\n# 또는 curl로 직접 테스트\ncurl -X POST http://localhost:8000/webhook/github \\\n  -H \"Content-Type: application/json\" \\\n  -H \"X-GitHub-Event: ping\" \\\n  -d '{\"zen\": \"Test webhook\"}'\n```\n\n### 2. 로그 확인\n```bash\n# 애플리케이션 로그에서 웹훅 수신 확인\ndocker-compose logs -f app\n\n# 또는 로컬 실행 시\npython main.py\n```\n\n### 3. 상태 확인\n```bash\n# 헬스 체크\ncurl http://localhost:8000/health\n\n# API 문서 확인\nopen http://localhost:8000/docs\n```\n\n## 🚨 트러블슈팅\n\n### 1. 웹훅이 도달하지 않는 경우\n- [ ] 방화벽 설정 확인\n- [ ] 포트 8000이 열려있는지 확인\n- [ ] ngrok 터널이 활성화되어 있는지 확인\n- [ ] GitHub 웹훅 URL이 정확한지 확인\n\n### 2. 서명 검증 실패\n- [ ] `GITHUB_WEBHOOK_SECRET` 환경변수 확인\n- [ ] GitHub 웹훅 설정의 Secret과 일치하는지 확인\n- [ ] 특수문자나 공백이 포함되지 않았는지 확인\n\n### 3. 500 에러 발생\n- [ ] 애플리케이션 로그 확인\n- [ ] 데이터베이스 연결 상태 확인\n- [ ] 의존성 패키지 설치 확인\n\n## 📊 모니터링\n\n### 1. 웹훅 수신 로그\n```bash\n# 실시간 로그 모니터링\ntail -f logs/webhook.log\n\n# 또는 Docker 환경에서\ndocker-compose logs -f --tail=100 app\n```\n\n### 2. 성능 모니터링\n- 웹훅 처리 시간\n- 에러율\n- 처리량 (requests/minute)\n\n## 🔄 고급 설정\n\n### 1. 로드 밸런싱\n```nginx\nupstream codeping_app {\n    server localhost:8000;\n    server localhost:8001;  # 다중 인스턴스\n}\n\nserver {\n    location /webhook/ {\n        proxy_pass http://codeping_app;\n    }\n}\n```\n\n### 2. 웹훅 재시도 설정\n- GitHub는 실패 시 자동으로 재시도합니다\n- 최대 5회까지 재시도\n- 지수 백오프 적용\n\n### 3. 배치 처리\n- Celery 워커를 통한 비동기 처리\n- Redis/RabbitMQ 메시지 큐 활용\n\n## 📚 관련 문서\n\n- [CI/CD 파이프라인 가이드](cicd_pipeline_guide.md)\n- [문서 자동화 가이드](documentation_automation_guide.md)\n- [universal_webhook_receiver 패키지 문서](https://pypi.org/project/universal-webhook-receiver/)\n\n## 🆘 지원\n\n문제가 발생하면 다음을 확인해주세요:\n1. 애플리케이션 로그\n2. GitHub 웹훅 \"Recent Deliveries\" 상태\n3. 네트워크 연결 상태\n4. 환경변수 설정\n\n---\n\n**💡 팁**: 개발 중에는 ngrok을 사용하여 로컬 환경을 GitHub에 노출시키는 것이 가장 편리합니다." 
+# 🔗 웹훅 설정 가이드
+
+CodePing.AI 웹훅 시스템 설정 방법을 안내합니다.
+
+## 🎯 개요
+
+CodePing.AI는 GitHub 웹훅을 통해 코드 변경사항을 실시간으로 수신하고 처리합니다.
+
+### 📦 현재 모듈 구조
+- **로컬 모듈**: `shared/`, `infrastructure/` 사용 중
+- **PyPI 패키지**: `universal_llm_service` 설치됨
+- **웹훅 처리**: 내장 FastAPI 라우터 사용
+
+## 🌐 웹훅 엔드포인트
+
+### 기본 엔드포인트
+- **GitHub 전용**: `POST /webhook/github`
+- **범용 웹훅**: `POST /webhook/`
+
+### 환경별 페이로드 URL
+
+#### 🔧 로컬 개발 환경
+```
+https://your-ngrok-url.ngrok.io/webhook/github
+```
+
+#### 🐳 Docker 환경
+```
+http://your-server-ip:8000/webhook/github
+```
+
+#### 🚀 프로덕션 환경
+```
+https://your-domain.com/webhook/github
+```
+
+## ⚙️ GitHub 웹훅 설정
+
+### 1. GitHub 저장소 설정
+
+1. GitHub 저장소로 이동
+2. **Settings** → **Webhooks** → **Add webhook**
+
+### 2. 웹훅 구성
+
+| 설정 항목 | 값 |
+|----------|---|
+| **Payload URL** | `https://your-domain.com/webhook/github` |
+| **Content type** | `application/json` |
+| **Secret** | 환경변수 `WEBHOOK_SECRET` 값 |
+| **SSL verification** | Enable SSL verification |
+
+### 3. 이벤트 선택
+
+다음 이벤트를 선택하세요:
+
+- ✅ **Push events** - 코드 푸시 시
+- ✅ **Pull request events** - PR 생성/업데이트 시
+- ✅ **Release events** - 릴리스 생성 시
+
+### 4. 활성화
+
+- ✅ **Active** 체크박스 선택
+
+## 🔐 보안 설정
+
+### 환경 변수 설정
+
+```bash
+# .env 파일
+WEBHOOK_SECRET=your-webhook-secret-key
+GITHUB_TOKEN=your-github-token
+SLACK_BOT_TOKEN=your-slack-bot-token
+OPENAI_API_KEY=your-openai-api-key
+```
+
+### Secret 검증
+
+웹훅 요청의 진위를 확인하기 위해 GitHub Secret을 사용합니다:
+
+```python
+# 내장 검증 로직 (shared/utils/ 모듈에서 처리)
+import hmac
+import hashlib
+
+def verify_webhook_signature(payload, signature, secret):
+    expected = hmac.new(
+        secret.encode('utf-8'),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(f"sha256={expected}", signature)
+```
+
+## 🧪 테스트
+
+### 1. 웹훅 테스트
+
+GitHub 웹훅 설정 페이지에서:
+1. **Recent Deliveries** 섹션 확인
+2. **Redeliver** 버튼으로 재전송 테스트
+
+### 2. 로컬 테스트
+
+```bash
+# 애플리케이션 실행
+python main.py
+
+# 또는 Docker로 실행
+docker run -p 8000:8000 codeping-ai:latest
+```
+
+### 3. 수동 테스트
+
+```bash
+curl -X POST http://localhost:8000/webhook/github \
+  -H "Content-Type: application/json" \
+  -H "X-GitHub-Event: push" \
+  -d '{"ref": "refs/heads/main", "repository": {"name": "test-repo"}}'
+```
+
+## 🔍 트러블슈팅
+
+### 일반적인 문제들
+
+#### 1. 웹훅이 도달하지 않는 경우
+- 방화벽 설정 확인
+- 포트 8000 개방 여부 확인
+- HTTPS 인증서 유효성 확인
+
+#### 2. Secret 검증 실패
+```bash
+# 환경 변수 확인
+echo $WEBHOOK_SECRET
+
+# GitHub 설정과 일치하는지 확인
+```
+
+#### 3. 모듈 import 오류
+```bash
+# 현재 사용 중인 모듈 구조
+ls -la shared/
+ls -la infrastructure/
+
+# PyPI 패키지 확인
+pip list | grep universal
+```
+
+#### 4. 데이터베이스 연결 오류
+```bash
+# 환경 변수 확인
+echo $DATABASE_URL
+
+# 데이터베이스 상태 확인
+python -c "from shared.config.database import engine; print('DB OK')"
+```
+
+### 로그 확인
+
+```bash
+# 애플리케이션 로그
+tail -f logs/app.log
+
+# Docker 로그
+docker logs container-name
+```
+
+## 📊 모니터링
+
+### 웹훅 통계 확인
+
+GitHub 저장소 설정에서:
+1. **Webhooks** → 해당 웹훅 클릭
+2. **Recent Deliveries** 섹션에서 성공/실패 확인
+
+### 응답 코드
+
+| 코드 | 의미 |
+|------|------|
+| 200 | 성공적으로 처리됨 |
+| 400 | 잘못된 요청 형식 |
+| 401 | 인증 실패 (Secret 불일치) |
+| 500 | 서버 내부 오류 |
+
+## 🚀 고급 설정
+
+### 조건부 처리
+
+특정 브랜치나 파일 변경 시에만 처리하려면:
+
+```python
+# shared/utils/webhook_filter.py (예시)
+def should_process_webhook(payload):
+    ref = payload.get('ref', '')
+    if ref == 'refs/heads/main':  # main 브랜치만
+        return True
+    return False
+```
+
+### 배치 처리
+
+대량의 웹훅 처리를 위한 큐 시스템:
+
+```python
+# Celery 작업자 (shared/config/celery_app.py)
+from celery import Celery
+
+app = Celery('webhook_processor')
+
+@app.task
+def process_webhook_async(payload):
+    # 비동기 웹훅 처리
+    pass
+```
+
+## 📞 지원
+
+문제가 발생하면:
+1. [GitHub Issues](https://github.com/yeonjae-work/CodePing.AI/issues) 확인
+2. 로그 파일과 함께 이슈 생성
+3. 환경 정보 (OS, Python 버전, Docker 버전) 포함
+
+---
+
+> **참고**: 현재 대부분의 기능이 로컬 모듈(`shared/`, `infrastructure/`)로 구현되어 있으며, 
+> 안정화 후 순차적으로 PyPI 패키지로 마이그레이션될 예정입니다. 

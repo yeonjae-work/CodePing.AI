@@ -1,1 +1,1 @@
-"""Shared utilities and common code.""" 
+"""Shared utilities and common code."""

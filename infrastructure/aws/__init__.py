@@ -1,1 +1,1 @@
-"""AWS infrastructure components.""" 
+"""AWS infrastructure components."""

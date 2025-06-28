@@ -1,3 +1,8 @@
+import sys
+from shared.config.database import create_tables_sync, get_sync_engine
+from modules.data_storage.models import Base, CommitRecord, DiffRecord, Event
+        from sqlalchemy import inspect
+
 #!/usr/bin/env python3
 """
 DataStorage MVP 데이터베이스 마이그레이션 스크립트
@@ -6,17 +11,9 @@ DataStorage MVP 데이터베이스 마이그레이션 스크립트
 데이터베이스 테이블들을 생성합니다.
 """
 
-import sys
-import os
-from pathlib import Path
-
 # 프로젝트 루트를 Python path에 추가
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
-
-from shared.config.database import create_tables_sync, get_sync_engine
-from modules.data_storage.models import Base, CommitRecord, DiffRecord, Event
-
 
 def main():
     """메인 마이그레이션 함수"""
@@ -33,7 +30,6 @@ def main():
         create_tables_sync()
 
         # 생성된 테이블 확인
-        from sqlalchemy import inspect
 
         inspector = inspect(engine)
         tables = inspector.get_table_names()
@@ -79,7 +75,6 @@ def main():
         return 1
 
     return 0
-
 
 if __name__ == "__main__":
     exit(main())

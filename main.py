@@ -1,17 +1,14 @@
-"""Main FastAPI application with modular router auto-discovery."""
-
 from __future__ import annotations
-
 import logging
 from importlib import import_module
-from pathlib import Path
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from shared.config.database import create_tables
 from shared.config.settings import get_settings
 from shared.utils.logging import setup_detailed_logging
+    import uvicorn
+
+"""Main FastAPI application with modular router auto-discovery."""
 
 # Import models to register them with SQLAlchemy
 # Note: Models are now in PyPI packages
@@ -21,7 +18,6 @@ from shared.utils.logging import setup_detailed_logging
 setup_detailed_logging()
 logger = logging.getLogger(__name__)
 
-
 def create_app() -> FastAPI:
     """Create and configure FastAPI application."""
 
@@ -29,7 +25,7 @@ def create_app() -> FastAPI:
         title="Git Diff Monitor",
         description="Modular monolith for monitoring git repository changes",
         version="1.0.0",
-    )
+        )
 
     # Add CORS middleware
     app.add_middleware(
@@ -38,13 +34,12 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
-    )
+        )
 
     # Auto-discover and include module routers
     _auto_include_routers(app)
 
     return app
-
 
 def _auto_include_routers(app: FastAPI) -> None:
     """Include routers from PyPI packages."""
@@ -73,10 +68,8 @@ def _auto_include_routers(app: FastAPI) -> None:
                 "❌ Failed to include router from %s: %s", router_module_name, exc
             )
 
-
 # Create app instance
 app = create_app()
-
 
 @app.on_event("startup")
 async def startup_event():
@@ -95,26 +88,21 @@ async def startup_event():
     logger.info("📊 Database: %s", settings.database_url)
     logger.info("🔧 Celery: %s", settings.celery_broker_url)
 
-
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on application shutdown."""
     logger.info("🛑 Shutting down Git Diff Monitor...")
-
 
 @app.get("/")
 async def root():
     """Root endpoint for health check."""
     return {"message": "Git Diff Monitor API", "status": "healthy", "version": "1.0.0"}
 
-
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "ok"}
 
-
 if __name__ == "__main__":
-    import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=9000)

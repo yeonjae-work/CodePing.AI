@@ -1,3 +1,8 @@
+import sys
+import click
+from modules.notion_sync.service import (
+from modules.notion_sync.models import (
+
 #!/usr/bin/env python3
 """
 범용 Notion 동기화 CLI 도구
@@ -12,27 +17,15 @@
     python manage_notion.py discover-hierarchy <database_id>
 """
 
-import asyncio
-import json
-import sys
-import os
-from pathlib import Path
-from typing import Optional, List
-import uuid
-
-import click
-
 # 모듈 경로 추가 (독립 실행을 위해)
 sys.path.insert(0, str(Path(__file__).parent))
 
-from modules.notion_sync.service import (
     UniversalNotionSyncEngine,
     ConfigurationManager,
     create_notion_sync_engine,
     quick_sync_page,
     quick_sync_database,
 )
-from modules.notion_sync.models import (
     NotionCredentials,
     SyncTarget,
     SyncConfiguration,
@@ -40,7 +33,6 @@ from modules.notion_sync.models import (
     SyncStrategy,
     RelationDiscoveryMode,
 )
-
 
 def get_notion_token() -> str:
     """환경변수에서 Notion 토큰 가져오기"""
@@ -53,7 +45,6 @@ def get_notion_token() -> str:
         sys.exit(1)
     return token
 
-
 @click.group()
 @click.option("--config", default="notion_sync_config.json", help="설정 파일 경로")
 @click.pass_context
@@ -61,7 +52,6 @@ def cli(ctx, config):
     """범용 Notion 동기화 관리 도구"""
     ctx.ensure_object(dict)
     ctx.obj["config_file"] = config
-
 
 @cli.command()
 @click.argument("page_id")
@@ -87,8 +77,7 @@ def add_page(ctx, page_id, name, output, format, strategy, transformer):
         _add_page(
             ctx.obj["config_file"], page_id, name, output, format, strategy, transformer
         )
-    )
-
+        )
 
 async def _add_page(config_file, page_id, name, output, format, strategy, transformer):
     token = get_notion_token()
@@ -111,7 +100,7 @@ async def _add_page(config_file, page_id, name, output, format, strategy, transf
         format=ContentFormat(format),
         strategy=SyncStrategy(strategy),
         custom_transformer=transformer,
-    )
+        )
 
     # 페이지 유효성 검사
     engine = UniversalNotionSyncEngine(config)
@@ -135,7 +124,6 @@ async def _add_page(config_file, page_id, name, output, format, strategy, transf
     click.echo(f"✅ 페이지 '{name}'가 동기화 대상에 추가되었습니다.")
     click.echo(f"   출력 파일: {output}")
     click.echo(f"   형식: {format}")
-
 
 @cli.command()
 @click.argument("database_id")
@@ -174,8 +162,7 @@ def add_database(
             transformer,
             filter_by,
         )
-    )
-
+        )
 
 async def _add_database(
     config_file, database_id, name, output, format, strategy, transformer, filter_by
@@ -217,7 +204,7 @@ async def _add_database(
         strategy=SyncStrategy(strategy),
         custom_transformer=transformer,
         relation_filter=relation_filter,
-    )
+        )
 
     # 데이터베이스 유효성 검사
     engine = UniversalNotionSyncEngine(config)
@@ -243,7 +230,6 @@ async def _add_database(
     click.echo(f"   출력 파일: {output}")
     click.echo(f"   형식: {format}")
 
-
 @cli.command()
 @click.argument("target_id")
 @click.pass_context
@@ -267,7 +253,6 @@ def remove(ctx, target_id):
         config.remove_target(target_id)
         config_manager.save_configuration(config)
         click.echo(f"✅ '{target.name}' 대상이 제거되었습니다.")
-
 
 @cli.command()
 @click.pass_context
@@ -294,14 +279,12 @@ def list_targets(ctx):
             click.echo(f"   최종 동기화: {target.last_sync}")
         click.echo()
 
-
 @cli.command()
 @click.option("--target", help="특정 대상만 동기화 (ID 또는 이름)")
 @click.pass_context
 def sync(ctx, target):
     """동기화 실행"""
     asyncio.run(_sync(ctx.obj["config_file"], target))
-
 
 async def _sync(config_file, target_filter):
     token = get_notion_token()
@@ -346,7 +329,6 @@ async def _sync(config_file, target_filter):
     config_manager.save_configuration(config)
     click.echo("\n🎉 동기화 완료!")
 
-
 @cli.command()
 @click.argument("database_id")
 @click.option("--max-depth", default=3, help="최대 탐색 깊이")
@@ -356,8 +338,7 @@ def discover_hierarchy(ctx, database_id, max_depth, auto_add):
     """데이터베이스 계층 구조 자동 발견"""
     asyncio.run(
         _discover_hierarchy(ctx.obj["config_file"], database_id, max_depth, auto_add)
-    )
-
+        )
 
 async def _discover_hierarchy(config_file, database_id, max_depth, auto_add):
     token = get_notion_token()
@@ -422,13 +403,11 @@ async def _discover_hierarchy(config_file, database_id, max_depth, auto_add):
             "\n💡 발견된 데이터베이스를 동기화 대상으로 추가하려면 --auto-add 옵션을 사용하세요."
         )
 
-
 @cli.command()
 @click.pass_context
 def test_connection(ctx):
     """Notion API 연결 테스트"""
     asyncio.run(_test_connection())
-
 
 async def _test_connection():
     token = get_notion_token()
@@ -438,7 +417,7 @@ async def _test_connection():
         engine = await create_notion_sync_engine(token)
 
         # 테스트용 더미 페이지 조회 (실패해도 됨)
-        _test_result = await engine.api_client.get_page("dummy-id")
+        _ = await engine.api_client.get_page("dummy-id")
 
         click.echo("✅ Notion API 연결 성공!")
         click.echo(f"   토큰: {token[:10]}...{token[-4:]}")
@@ -446,7 +425,6 @@ async def _test_connection():
 
     except Exception as e:
         click.echo(f"❌ Notion API 연결 실패: {e}")
-
 
 @cli.command()
 @click.argument("page_id")
@@ -461,7 +439,6 @@ def quick_page(page_id, output_file, format):
     """빠른 페이지 동기화 (설정 파일 없이)"""
     asyncio.run(_quick_page(page_id, output_file, format))
 
-
 async def _quick_page(page_id, output_file, format):
     token = get_notion_token()
 
@@ -473,7 +450,6 @@ async def _quick_page(page_id, output_file, format):
         click.echo(f"✅ 동기화 완료: {output_file}")
     else:
         click.echo("❌ 동기화 실패")
-
 
 @cli.command()
 @click.argument("database_id")
@@ -488,7 +464,6 @@ def quick_database(database_id, output_file, format):
     """빠른 데이터베이스 동기화 (설정 파일 없이)"""
     asyncio.run(_quick_database(database_id, output_file, format))
 
-
 async def _quick_database(database_id, output_file, format):
     token = get_notion_token()
 
@@ -496,13 +471,12 @@ async def _quick_database(database_id, output_file, format):
 
     success = await quick_sync_database(
         token, database_id, output_file, ContentFormat(format)
-    )
+        )
 
     if success:
         click.echo(f"✅ 동기화 완료: {output_file}")
     else:
         click.echo("❌ 동기화 실패")
-
 
 @cli.command()
 @click.pass_context
@@ -539,7 +513,6 @@ def export_config(ctx):
     }
 
     click.echo(json.dumps(masked_config, indent=2, ensure_ascii=False))
-
 
 if __name__ == "__main__":
     # CLI 실행

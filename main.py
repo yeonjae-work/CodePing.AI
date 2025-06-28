@@ -1,5 +1,6 @@
 from __future__ import annotations
 import logging
+from contextlib import asynccontextmanager
 from importlib import import_module
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +19,30 @@ setup_detailed_logging()
 logger = logging.getLogger(__name__)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan context manager."""
+    # Startup
+    logger.info("🚀 Starting Git Diff Monitor...")
+    
+    # Create database tables
+    try:
+        await create_tables()
+        logger.info("✅ Database tables created/verified")
+    except Exception as exc:
+        logger.error("❌ Failed to create database tables: %s", exc)
+
+    # Log configuration
+    settings = get_settings()
+    logger.info("📊 Database: %s", settings.database_url)
+    logger.info("🔧 Celery: %s", settings.celery_broker_url)
+    
+    yield
+    
+    # Shutdown
+    logger.info("🛑 Shutting down Git Diff Monitor...")
+
+
 def create_app() -> FastAPI:
     """Create and configure FastAPI application."""
 
@@ -25,6 +50,7 @@ def create_app() -> FastAPI:
         title="Git Diff Monitor",
         description="Modular monolith for monitoring git repository changes",
         version="1.0.0",
+        lifespan=lifespan,
     )
 
     # Add CORS middleware
@@ -72,30 +98,6 @@ def _auto_include_routers(app: FastAPI) -> None:
 
 # Create app instance
 app = create_app()
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize application on startup."""
-    logger.info("🚀 Starting Git Diff Monitor...")
-
-    # Create database tables
-    try:
-        await create_tables()
-        logger.info("✅ Database tables created/verified")
-    except Exception as exc:
-        logger.error("❌ Failed to create database tables: %s", exc)
-
-    # Log configuration
-    settings = get_settings()
-    logger.info("📊 Database: %s", settings.database_url)
-    logger.info("🔧 Celery: %s", settings.celery_broker_url)
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on application shutdown."""
-    logger.info("🛑 Shutting down Git Diff Monitor...")
 
 
 @app.get("/")

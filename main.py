@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from shared.config.database import create_tables
 from shared.config.settings import get_settings
 from shared.utils.logging import setup_detailed_logging
-    import uvicorn
 
 """Main FastAPI application with modular router auto-discovery."""
 
@@ -104,5 +103,5 @@ async def health_check():
     return {"status": "ok"}
 
 if __name__ == "__main__":
-
+    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=9000)

@@ -1,8 +1,3 @@
-import sys
-from shared.config.database import create_tables_sync, get_sync_engine
-from modules.data_storage.models import Base, CommitRecord, DiffRecord, Event
-        from sqlalchemy import inspect
-
 #!/usr/bin/env python3
 """
 DataStorage MVP 데이터베이스 마이그레이션 스크립트
@@ -10,6 +5,11 @@ DataStorage MVP 데이터베이스 마이그레이션 스크립트
 이 스크립트는 설계서를 바탕으로 구현된 MVP 버전의 DataStorage 모듈을 위한
 데이터베이스 테이블들을 생성합니다.
 """
+
+import sys
+from pathlib import Path
+from sqlalchemy import inspect
+from shared.config.database import create_tables_sync, get_sync_engine
 
 # 프로젝트 루트를 Python path에 추가
 project_root = Path(__file__).parent.parent

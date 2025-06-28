@@ -157,7 +157,9 @@ class ModuleIOLogger:
                     return f"List[{length} items]"
                 else:
                     more_items = length - max_items
-                    return f"List[{length} items: {max_items} shown + {more_items} more]"
+                    return (
+                        f"List[{length} items: {max_items} shown + {more_items} more]"
+                    )
 
             elif hasattr(data, "__dict__"):
                 # Pydantic 모델이나 dataclass

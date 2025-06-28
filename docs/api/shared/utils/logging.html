@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>shared.utils.logging API documentation</title>
+<meta name="description" content="모듈별 입출력 로깅 유틸리티 …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>shared.utils.logging</code></h1>
+</header>
+<section id="section-intro">
+<p>모듈별 입출력 로깅 유틸리티</p>
+<p>각 모듈의 입력/출력 데이터를 상세하게 로깅하여
+전체 흐름을 추적할 수 있도록 합니다.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="shared.utils.logging.default_json_serializer"><code class="name flex">
+<span>def <span class="ident">default_json_serializer</span></span>(<span>obj)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def default_json_serializer(obj):
+    &#34;&#34;&#34;JSON 직렬화를 위한 기본 시리얼라이저&#34;&#34;&#34;
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif hasattr(obj, &#34;__dict__&#34;):
+        return obj.__dict__
+    elif isinstance(obj, set):
+        return list(obj)
+    elif isinstance(obj, MappingProxyType):
+        return dict(obj)
+    elif isinstance(obj, (type(lambda: None), type(len))):  # Handle function or method
+        return str(obj)
+    raise TypeError(f&#34;Type {type(obj)} not serializable&#34;)</code></pre>
+</details>
+<div class="desc"><p>JSON 직렬화를 위한 기본 시리얼라이저</p></div>
+</dd>
+<dt id="shared.utils.logging.log_module_io"><code class="name flex">
+<span>def <span class="ident">log_module_io</span></span>(<span>module_name: str,<br>operation: str,<br>input_data: Any = None,<br>output_data: Any = None,<br>metadata: Dict = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def log_module_io(
+    module_name: str,
+    operation: str,
+    input_data: Any = None,
+    output_data: Any = None,
+    metadata: Dict = None,
+):
+    &#34;&#34;&#34;모듈별 입력/출력 데이터 로깅 (기존 함수 호환성 유지)&#34;&#34;&#34;
+    log_entry = {
+        &#34;timestamp&#34;: datetime.now().isoformat(),
+        &#34;module&#34;: module_name,
+        &#34;operation&#34;: operation,
+        &#34;input&#34;: simplify_data(input_data) if input_data is not None else None,
+        &#34;output&#34;: simplify_data(output_data) if output_data is not None else None,
+        &#34;metadata&#34;: metadata or {},
+    }
+
+    flow_logger.info(
+        &#34;MODULE_FLOW: %s&#34;,
+        json.dumps(
+            log_entry, ensure_ascii=False, indent=2, default=default_json_serializer
+        ),
+    )</code></pre>
+</details>
+<div class="desc"><p>모듈별 입력/출력 데이터 로깅 (기존 함수 호환성 유지)</p></div>
+</dd>
+<dt id="shared.utils.logging.log_processing_chain_end"><code class="name flex">
+<span>def <span class="ident">log_processing_chain_end</span></span>(<span>success: bool, metadata: Dict = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def log_processing_chain_end(success: bool, metadata: Dict = None):
+    &#34;&#34;&#34;전체 처리 체인 완료 로깅&#34;&#34;&#34;
+    status = &#34;COMPLETED&#34; if success else &#34;FAILED&#34;
+    icon = &#34;🎉&#34; if success else &#34;❌&#34;
+
+    flow_logger.info(f&#34;{icon} PROCESSING CHAIN {status}&#34;)
+    flow_logger.info(&#34;=&#34; * 80)
+
+    log_module_io(&#34;PROCESSING_CHAIN&#34;, status, metadata=metadata or {})</code></pre>
+</details>
+<div class="desc"><p>전체 처리 체인 완료 로깅</p></div>
+</dd>
+<dt id="shared.utils.logging.log_processing_chain_start"><code class="name flex">
+<span>def <span class="ident">log_processing_chain_start</span></span>(<span>payload: Dict, headers: Dict)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def log_processing_chain_start(payload: Dict, headers: Dict):
+    &#34;&#34;&#34;전체 처리 체인 시작 로깅&#34;&#34;&#34;
+    flow_logger.info(&#34;=&#34; * 80)
+    flow_logger.info(&#34;🚀 PROCESSING CHAIN STARTED&#34;)
+    flow_logger.info(&#34;=&#34; * 80)
+
+    log_module_io(
+        &#34;PROCESSING_CHAIN&#34;,
+        &#34;START&#34;,
+        input_data={
+            &#34;payload_keys&#34;: list(payload.keys()),
+            &#34;headers&#34;: list(headers.keys()),
+        },
+        metadata={
+            &#34;repository&#34;: payload.get(&#34;repository&#34;, {}).get(&#34;full_name&#34;, &#34;unknown&#34;),
+            &#34;commits_count&#34;: len(payload.get(&#34;commits&#34;, [])),
+            &#34;re&#34;: payload.get(&#34;re&#34;, &#34;unknown&#34;),
+            &#34;timestamp&#34;: datetime.now().isoformat(),
+        },
+    )</code></pre>
+</details>
+<div class="desc"><p>전체 처리 체인 시작 로깅</p></div>
+</dd>
+<dt id="shared.utils.logging.setup_detailed_logging"><code class="name flex">
+<span>def <span class="ident">setup_detailed_logging</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def setup_detailed_logging():
+    &#34;&#34;&#34;상세한 로깅 설정&#34;&#34;&#34;
+
+    # 전체 로깅 포맷 설정
+    formatter = logging.Formatter(
+        &#34;%(asctime)s - %(name)s - %(levelname)s - %(message)s&#34;,
+        datefmt=&#34;%Y-%m-%d %H:%M:%S&#34;,
+    )
+
+    # 콘솔 핸들러
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+
+    # Flow 로거 설정 (모듈 흐름 추적용)
+    flow_formatter = logging.Formatter(
+        &#34;🔄 %(asctime)s - FLOW - %(message)s&#34;, datefmt=&#34;%H:%M:%S&#34;
+    )
+    flow_handler = logging.StreamHandler()
+    flow_handler.setFormatter(flow_formatter)
+    flow_logger.addHandler(flow_handler)
+    flow_logger.propagate = False
+
+    # 각 모듈 로거 설정
+    for module_name, logger in module_loggers.items():
+        logger.setLevel(logging.INFO)
+        module_formatter = logging.Formatter(
+            f&#34;📦 %(asctime)s - {module_name} - %(levelname)s - %(message)s&#34;,
+            datefmt=&#34;%H:%M:%S&#34;,
+        )
+        module_handler = logging.StreamHandler()
+        module_handler.setFormatter(module_formatter)
+        logger.addHandler(module_handler)
+        logger.propagate = False</code></pre>
+</details>
+<div class="desc"><p>상세한 로깅 설정</p></div>
+</dd>
+<dt id="shared.utils.logging.simplify_data"><code class="name flex">
+<span>def <span class="ident">simplify_data</span></span>(<span>data: Any, max_depth: int = 3, current_depth: int = 0) ‑> Any</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def simplify_data(data: Any, max_depth: int = 3, current_depth: int = 0) -&gt; Any:
+    &#34;&#34;&#34;
+    복잡한 데이터 구조를 로깅하기 쉽게 단순화
+    &#34;&#34;&#34;
+    try:
+        if current_depth &gt;= max_depth:
+            return f&#34;&lt;depth_limit_reached: {type(data).__name__}&gt;&#34;
+
+        if isinstance(data, dict):
+            simplified = {}
+            for key, value in data.items():
+                try:
+                    if isinstance(key, str) and len(key) &gt; 50:
+                        key = key[:47] + &#34;...&#34;
+                    simplified[key] = simplify_data(value, max_depth, current_depth + 1)
+                except Exception as e:
+                    simplified[key] = f&#34;&lt;simplify_error: {type(e).__name__}&gt;&#34;
+            return simplified
+
+        elif isinstance(data, list):
+            try:
+                if len(data) &gt; 10:  # 리스트가 너무 길면 처음 10개만 표시
+                    return [
+                        simplify_data(item, max_depth, current_depth + 1)
+                        for item in data[:10]
+                    ] + [f&#34;... (+{len(data) - 10} more items)&#34;]
+                return [
+                    simplify_data(item, max_depth, current_depth + 1) for item in data
+                ]
+            except Exception:
+                return f&#34;&lt;list_simplify_error: {len(data)} items&gt;&#34;
+
+        elif isinstance(data, str):
+            if len(data) &gt; 200:
+                return data[:197] + &#34;...&#34;
+            return data
+
+        elif isinstance(data, bytes):
+            if len(data) &gt; 1000:
+                return f&#34;&lt;bytes: {len(data)} bytes&gt;&#34;
+            return data
+
+        elif hasattr(data, &#34;__dict__&#34;):
+            try:
+                obj_dict = data.__dict__
+                if isinstance(obj_dict, dict):
+                    simplified_dict = simplify_data(
+                        obj_dict, max_depth, current_depth + 1
+                    )
+                    if isinstance(simplified_dict, dict):
+                        return {&#34;__type&#34;: type(data).__name__, **simplified_dict}
+                    else:
+                        return {
+                            &#34;__type&#34;: type(data).__name__,
+                            &#34;__dict_error&#34;: str(simplified_dict),
+                        }
+                else:
+                    return {
+                        &#34;__type&#34;: type(data).__name__,
+                        &#34;__dict_not_dict&#34;: str(type(obj_dict).__name__),
+                    }
+            except Exception as e:
+                return {&#34;__type&#34;: type(data).__name__, &#34;__dict_access_error&#34;: str(e)}
+
+        # 기본 타입들은 그대로 반환
+        elif isinstance(data, (int, float, bool, type(None))):
+            return data
+
+        # 기타 타입들은 문자열로 변환
+        else:
+            try:
+                str_repr = str(data)
+                if len(str_repr) &gt; 200:
+                    return str_repr[:197] + &#34;...&#34;
+                return str_repr
+            except Exception:
+                return f&#34;&lt;{type(data).__name__}: repr_error&gt;&#34;
+
+    except Exception as e:
+        return f&#34;&lt;simplify_error: {type(e).__name__}: {str(e)}&gt;&#34;</code></pre>
+</details>
+<div class="desc"><p>복잡한 데이터 구조를 로깅하기 쉽게 단순화</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="shared.utils.logging.ModuleIOLogger"><code class="flex name class">
+<span>class <span class="ident">ModuleIOLogger</span></span>
+<span>(</span><span>module_name: str)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ModuleIOLogger:
+    &#34;&#34;&#34;모듈별 입출력 로깅 클래스&#34;&#34;&#34;
+
+    def __init__(self, module_name: str):
+        self.module_name = module_name
+        self.logger = module_loggers.get(
+            module_name, logging.getLogger(f&#34;modules.{module_name.lower()}&#34;)
+        )
+        self.start_time = None
+
+    def log_input(self, operation: str, data: Any = None, metadata: Dict = None):
+        &#34;&#34;&#34;모듈 입력 데이터 로깅&#34;&#34;&#34;
+        self.start_time = time.time()
+
+        # 입력 데이터 요약
+        input_summary = self._summarize_data(data, max_items=5)
+
+        self.logger.info(f&#34;🔵 INPUT  | {operation}&#34;)
+        if input_summary:
+            self.logger.info(f&#34;📥 Data   | {input_summary}&#34;)
+        if metadata:
+            self.logger.info(f&#34;ℹ️  Meta   | {metadata}&#34;)
+
+        # Flow 로거에도 기록
+        log_module_io(
+            self.module_name, f&#34;{operation}_INPUT&#34;, input_data=data, metadata=metadata
+        )
+
+    def log_output(self, operation: str, data: Any = None, metadata: Dict = None):
+        &#34;&#34;&#34;모듈 출력 데이터 로깅&#34;&#34;&#34;
+
+        # 실행 시간 계산
+        duration = time.time() - self.start_time if self.start_time else 0
+
+        # 출력 데이터 요약
+        output_summary = self._summarize_data(data, max_items=5)
+
+        self.logger.info(f&#34;🟢 OUTPUT | {operation} (⏱️ {duration:.3f}s)&#34;)
+        if output_summary:
+            self.logger.info(f&#34;📤 Result | {output_summary}&#34;)
+        if metadata:
+            self.logger.info(f&#34;ℹ️  Meta   | {metadata}&#34;)
+
+        # Flow 로거에도 기록
+        log_module_io(
+            self.module_name,
+            f&#34;{operation}_OUTPUT&#34;,
+            output_data=data,
+            metadata={**(metadata or {}), &#34;duration_seconds&#34;: duration},
+        )
+
+    def log_error(self, operation: str, error: Exception, metadata: Dict = None):
+        &#34;&#34;&#34;모듈 오류 로깅&#34;&#34;&#34;
+        duration = time.time() - self.start_time if self.start_time else 0
+
+        self.logger.error(f&#34;🔴 ERROR  | {operation} (⏱️ {duration:.3f}s)&#34;)
+        self.logger.error(f&#34;❌ Error  | {type(error).__name__}: {str(error)}&#34;)
+        if metadata:
+            self.logger.error(f&#34;ℹ️  Meta   | {metadata}&#34;)
+
+        # Flow 로거에도 기록
+        log_module_io(
+            self.module_name,
+            f&#34;{operation}_ERROR&#34;,
+            metadata={
+                **(metadata or {}),
+                &#34;error_type&#34;: type(error).__name__,
+                &#34;error_message&#34;: str(error),
+                &#34;duration_seconds&#34;: duration,
+            },
+        )
+
+    def _summarize_data(self, data: Any, max_items: int = 5) -&gt; str:
+        &#34;&#34;&#34;데이터 요약 생성&#34;&#34;&#34;
+        if data is None:
+            return &#34;None&#34;
+
+        try:
+            if isinstance(data, dict):
+                keys = list(data.keys())[:max_items]
+                more = (
+                    f&#34; (+{len(data) - max_items} more)&#34; if len(data) &gt; max_items else &#34;&#34;
+                )
+                return f&#34;Dict[{&#39;, &#39;.join(keys)}{more}]&#34;
+
+            elif isinstance(data, list):
+                length = len(data)
+                if length == 0:
+                    return &#34;List[empty]&#34;
+                elif length &lt;= max_items:
+                    return f&#34;List[{length} items]&#34;
+                else:
+                    more_items = length - max_items
+                    return (
+                        f&#34;List[{length} items: {max_items} shown + {more_items} more]&#34;
+                    )
+
+            elif hasattr(data, &#34;__dict__&#34;):
+                # Pydantic 모델이나 dataclass
+                attrs = list(data.__dict__.keys())[:max_items]
+                more = (
+                    f&#34; (+{len(data.__dict__) - max_items} more)&#34;
+                    if len(data.__dict__) &gt; max_items
+                    else &#34;&#34;
+                )
+                return f&#34;{type(data).__name__}[{&#39;, &#39;.join(attrs)}{more}]&#34;
+
+            elif isinstance(data, str):
+                return (
+                    f&#34;String[{len(data)} chars]&#34;
+                    if len(data) &gt; 50
+                    else f&#34;&#39;{data[:50]}...&#39;&#34;
+                )
+
+            elif isinstance(data, bytes):
+                return f&#34;Bytes[{len(data)} bytes]&#34;
+
+            else:
+                return f&#34;{type(data).__name__}[{str(data)[:100]}...]&#34;
+
+        except Exception:
+            return f&#34;{type(data).__name__}[summary failed]&#34;</code></pre>
+</details>
+<div class="desc"><p>모듈별 입출력 로깅 클래스</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="shared.utils.logging.ModuleIOLogger.log_error"><code class="name flex">
+<span>def <span class="ident">log_error</span></span>(<span>self, operation: str, error: Exception, metadata: Dict = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def log_error(self, operation: str, error: Exception, metadata: Dict = None):
+    &#34;&#34;&#34;모듈 오류 로깅&#34;&#34;&#34;
+    duration = time.time() - self.start_time if self.start_time else 0
+
+    self.logger.error(f&#34;🔴 ERROR  | {operation} (⏱️ {duration:.3f}s)&#34;)
+    self.logger.error(f&#34;❌ Error  | {type(error).__name__}: {str(error)}&#34;)
+    if metadata:
+        self.logger.error(f&#34;ℹ️  Meta   | {metadata}&#34;)
+
+    # Flow 로거에도 기록
+    log_module_io(
+        self.module_name,
+        f&#34;{operation}_ERROR&#34;,
+        metadata={
+            **(metadata or {}),
+            &#34;error_type&#34;: type(error).__name__,
+            &#34;error_message&#34;: str(error),
+            &#34;duration_seconds&#34;: duration,
+        },
+    )</code></pre>
+</details>
+<div class="desc"><p>모듈 오류 로깅</p></div>
+</dd>
+<dt id="shared.utils.logging.ModuleIOLogger.log_input"><code class="name flex">
+<span>def <span class="ident">log_input</span></span>(<span>self, operation: str, data: Any = None, metadata: Dict = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def log_input(self, operation: str, data: Any = None, metadata: Dict = None):
+    &#34;&#34;&#34;모듈 입력 데이터 로깅&#34;&#34;&#34;
+    self.start_time = time.time()
+
+    # 입력 데이터 요약
+    input_summary = self._summarize_data(data, max_items=5)
+
+    self.logger.info(f&#34;🔵 INPUT  | {operation}&#34;)
+    if input_summary:
+        self.logger.info(f&#34;📥 Data   | {input_summary}&#34;)
+    if metadata:
+        self.logger.info(f&#34;ℹ️  Meta   | {metadata}&#34;)
+
+    # Flow 로거에도 기록
+    log_module_io(
+        self.module_name, f&#34;{operation}_INPUT&#34;, input_data=data, metadata=metadata
+    )</code></pre>
+</details>
+<div class="desc"><p>모듈 입력 데이터 로깅</p></div>
+</dd>
+<dt id="shared.utils.logging.ModuleIOLogger.log_output"><code class="name flex">
+<span>def <span class="ident">log_output</span></span>(<span>self, operation: str, data: Any = None, metadata: Dict = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def log_output(self, operation: str, data: Any = None, metadata: Dict = None):
+    &#34;&#34;&#34;모듈 출력 데이터 로깅&#34;&#34;&#34;
+
+    # 실행 시간 계산
+    duration = time.time() - self.start_time if self.start_time else 0
+
+    # 출력 데이터 요약
+    output_summary = self._summarize_data(data, max_items=5)
+
+    self.logger.info(f&#34;🟢 OUTPUT | {operation} (⏱️ {duration:.3f}s)&#34;)
+    if output_summary:
+        self.logger.info(f&#34;📤 Result | {output_summary}&#34;)
+    if metadata:
+        self.logger.info(f&#34;ℹ️  Meta   | {metadata}&#34;)
+
+    # Flow 로거에도 기록
+    log_module_io(
+        self.module_name,
+        f&#34;{operation}_OUTPUT&#34;,
+        output_data=data,
+        metadata={**(metadata or {}), &#34;duration_seconds&#34;: duration},
+    )</code></pre>
+</details>
+<div class="desc"><p>모듈 출력 데이터 로깅</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="shared.utils" href="index.html">shared.utils</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="shared.utils.logging.default_json_serializer" href="#shared.utils.logging.default_json_serializer">default_json_serializer</a></code></li>
+<li><code><a title="shared.utils.logging.log_module_io" href="#shared.utils.logging.log_module_io">log_module_io</a></code></li>
+<li><code><a title="shared.utils.logging.log_processing_chain_end" href="#shared.utils.logging.log_processing_chain_end">log_processing_chain_end</a></code></li>
+<li><code><a title="shared.utils.logging.log_processing_chain_start" href="#shared.utils.logging.log_processing_chain_start">log_processing_chain_start</a></code></li>
+<li><code><a title="shared.utils.logging.setup_detailed_logging" href="#shared.utils.logging.setup_detailed_logging">setup_detailed_logging</a></code></li>
+<li><code><a title="shared.utils.logging.simplify_data" href="#shared.utils.logging.simplify_data">simplify_data</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="shared.utils.logging.ModuleIOLogger" href="#shared.utils.logging.ModuleIOLogger">ModuleIOLogger</a></code></h4>
+<ul class="">
+<li><code><a title="shared.utils.logging.ModuleIOLogger.log_error" href="#shared.utils.logging.ModuleIOLogger.log_error">log_error</a></code></li>
+<li><code><a title="shared.utils.logging.ModuleIOLogger.log_input" href="#shared.utils.logging.ModuleIOLogger.log_input">log_input</a></code></li>
+<li><code><a title="shared.utils.logging.ModuleIOLogger.log_output" href="#shared.utils.logging.ModuleIOLogger.log_output">log_output</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

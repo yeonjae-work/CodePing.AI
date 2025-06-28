@@ -9,12 +9,9 @@ from unittest.mock import patch, AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
-
 from main import app
-from shared.config.settings import get_settings
 
 client = TestClient(app)
-
 SECRET = "test_webhook_secret"
 
 
@@ -25,11 +22,14 @@ def _create_signature(body: bytes) -> str:
 
 
 @pytest.fixture(autouse=True)
-def mock_settings(monkeypatch):
-    """Mock settings for testing."""
+def setup_local_settings(monkeypatch):
+    """Setup local settings for testing."""
     monkeypatch.setenv("GITHUB_WEBHOOK_SECRET", SECRET)
     monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
     monkeypatch.setenv("CELERY_ALWAYS_EAGER", "true")
+    
+    # Clear local settings cache
+    from shared.config.settings import get_settings
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
@@ -38,7 +38,7 @@ def mock_settings(monkeypatch):
 def _sample_github_payload() -> dict:
     """Create sample GitHub push payload."""
     return {
-        "re": "refs/heads/main",
+        "ref": "refs/heads/main",
         "repository": {
             "full_name": "test/repo",
             "name": "repo",
@@ -47,6 +47,7 @@ def _sample_github_payload() -> dict:
         "pusher": {"name": "testuser"},
         "head_commit": {
             "id": "abc123def456",
+            "sha": "abc123def456",
             "message": "Test commit",
             "timestamp": "2023-01-01T10:00:00Z",
             "url": "https://github.com/test/repo/commit/abc123def456",
@@ -61,6 +62,7 @@ def _sample_github_payload() -> dict:
         "commits": [
             {
                 "id": "abc123def456",
+                "sha": "abc123def456",
                 "message": "Test commit",
                 "timestamp": "2023-01-01T10:00:00Z",
                 "url": "https://github.com/test/repo/commit/abc123def456",
@@ -76,7 +78,7 @@ def _sample_github_payload() -> dict:
     }
 
 
-@patch("shared.config.celery_app.celery_app.send_task")
+@patch("universal_webhook_receiver.service.celery_app.send_task")
 def test_webhook_endpoint_valid_signature(mock_send_task):
     """Test webhook endpoint with valid GitHub push signature."""
     # Mock Celery task
@@ -95,7 +97,7 @@ def test_webhook_endpoint_valid_signature(mock_send_task):
     assert response.status_code == 200
     data = response.json()
     assert data["repository"] == "test/repo"
-    assert data["re"] == "refs/heads/main"
+    assert data["ref"] == "refs/heads/main"
     assert data["pusher"] == "testuser"
     assert len(data["commits"]) == 1
 
@@ -164,12 +166,16 @@ def test_webhook_endpoint_malformed_json():
     assert response.status_code == 400  # Bad Request
 
 
-@patch("shared.config.celery_app.celery_app.send_task")
+@patch("universal_webhook_receiver.service.celery_app.send_task")
 def test_webhook_multiple_commits(mock_send_task):
     """Test webhook with multiple commits."""
+    # Mock Celery task
+    mock_send_task.return_value = AsyncMock()
+    
     payload = _sample_github_payload()
     payload["commits"].append({
         "id": "def456ghi789",
+        "sha": "def456ghi789",
         "message": "Second commit",
         "timestamp": "2023-01-01T11:00:00Z",
         "url": "https://github.com/test/repo/commit/def456ghi789",

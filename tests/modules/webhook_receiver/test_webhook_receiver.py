@@ -27,7 +27,7 @@ def setup_local_settings(monkeypatch):
     monkeypatch.setenv("GITHUB_WEBHOOK_SECRET", SECRET)
     monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
     monkeypatch.setenv("CELERY_ALWAYS_EAGER", "true")
-    
+
     # Clear local settings cache
     from shared.config.settings import get_settings
     get_settings.cache_clear()
@@ -171,7 +171,7 @@ def test_webhook_multiple_commits(mock_send_task):
     """Test webhook with multiple commits."""
     # Mock Celery task
     mock_send_task.return_value = AsyncMock()
-    
+
     payload = _sample_github_payload()
     payload["commits"].append({
         "id": "def456ghi789",

@@ -57,23 +57,38 @@ jobs:
         
         echo "🧪 Testing individual package imports:"
         python -c "
-        packages = [
+        import os
+        import sys
+        
+        # Check site-packages directory
+        site_packages = '/opt/hostedtoolcache/Python/3.12.11/x64/lib/python3.12/site-packages'
+        print(f'📁 Contents of site-packages:')
+        
+        yeonjae_dirs = [d for d in os.listdir(site_packages) if 'yeonjae' in d.lower()]
+        for d in sorted(yeonjae_dirs):
+            print(f'  - {d}')
+            full_path = os.path.join(site_packages, d)
+            if os.path.isdir(full_path):
+                try:
+                    contents = os.listdir(full_path)[:5]  # Show first 5 items
+                    print(f'    Contents: {contents}')
+                except:
+                    pass
+        
+        print('\n🔍 Trying different import patterns:')
+        test_packages = [
+            'universal_git_data_parser',
+            'universal_webhook_receiver', 
             'yeonjae_universal_git_data_parser',
             'yeonjae_universal_webhook_receiver'
         ]
-        for pkg in packages:
+        
+        for pkg in test_packages:
             try:
                 __import__(pkg)
                 print(f'✅ {pkg} - SUCCESS')
             except ImportError as e:
                 print(f'❌ {pkg} - FAILED: {e}')
-                # Try alternative import names
-                alt_name = pkg.replace('_', '-')
-                try:
-                    __import__(alt_name)
-                    print(f'✅ {alt_name} - SUCCESS (alternative)')
-                except ImportError as e2:
-                    print(f'❌ {alt_name} - FAILED: {e2}')
         "
         
     - name: 🔍 Code quality checks

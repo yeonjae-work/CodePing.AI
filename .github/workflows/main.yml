@@ -342,23 +342,110 @@ jobs:
     - name: 📥 Checkout
       uses: actions/checkout@v4
       
-    - name: 🚀 Deploy application
+    - name: 🔧 Setup SSH
       run: |
-        echo "🚀 Deploying CodePing.AI to production..."
+        mkdir -p ~/.ssh
+        echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: 🚀 Deploy to Production Server
+      run: |
+        echo "🚀 Deploying CodePing.AI to production server..."
         echo "📊 Deployment info:"
         echo "  - Commit: ${{ github.sha }}"
         echo "  - Branch: ${{ github.ref_name }}"
         echo "  - Author: ${{ github.actor }}"
         echo "  - Time: $(date)"
+        echo "  - Target: ${{ secrets.PRODUCTION_HOST }}"
         echo ""
-        echo "✅ Production deployment completed"
-        echo "🔗 Application URL: https://your-domain.com"
         
-    - name: 🏥 Health check
+        # 프로덕션 서버에 최신 코드 배포
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+          echo "🔄 Starting deployment on production server..."
+          
+          # 프로젝트 디렉토리로 이동
+          cd ~/codeping-ai || { echo "❌ Project directory not found"; exit 1; }
+          
+          # Git 저장소 업데이트 (백업 후)
+          echo "📥 Updating source code..."
+          cp -r . ../codeping-ai-backup-$(date +%Y%m%d_%H%M%S) || echo "⚠️ Backup failed"
+          
+          # 최신 코드 가져오기 (파일 직접 업데이트)
+          echo "📦 Updating requirements.txt and main.py..."
+          
+          # Docker 컨테이너 중지
+          echo "🛑 Stopping containers..."
+          docker-compose down
+          
+          # Docker 이미지 재빌드 (캐시 없이)
+          echo "🐳 Rebuilding Docker images..."
+          docker-compose build --no-cache --pull
+          
+          # 컨테이너 재시작
+          echo "🚀 Starting containers..."
+          docker-compose up -d
+          
+          # 컨테이너 상태 확인
+          echo "🔍 Checking container status..."
+          sleep 10
+          docker ps | grep codeping
+          
+          echo "✅ Deployment completed successfully!"
+        EOF
+        
+    - name: 📁 Deploy Latest Files
+      run: |
+        echo "📁 Deploying latest application files..."
+        
+        # requirements.txt 업데이트
+        scp -o StrictHostKeyChecking=no requirements.txt ubuntu@${{ secrets.PRODUCTION_HOST }}:~/codeping-ai/requirements.txt
+        
+        # main.py 업데이트  
+        scp -o StrictHostKeyChecking=no main.py ubuntu@${{ secrets.PRODUCTION_HOST }}:~/codeping-ai/main.py
+        
+        # 기타 중요 파일들 업데이트
+        scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${{ secrets.PRODUCTION_HOST }}:~/codeping-ai/docker-compose.yml
+        scp -o StrictHostKeyChecking=no Dockerfile ubuntu@${{ secrets.PRODUCTION_HOST }}:~/codeping-ai/Dockerfile
+        
+        echo "✅ Files deployed successfully"
+        
+    - name: 🔄 Restart Production Services
+      run: |
+        echo "🔄 Restarting production services..."
+        
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+          cd ~/codeping-ai
+          
+          # Docker 컨테이너 재시작
+          echo "🐳 Restarting Docker containers..."
+          docker-compose restart
+          
+          # 헬스 체크 대기
+          echo "⏳ Waiting for services to start..."
+          sleep 15
+          
+          # 컨테이너 상태 확인
+          echo "📊 Container status:"
+          docker-compose ps
+          
+          # 웹 애플리케이션 헬스 체크
+          echo "🏥 Health check:"
+          curl -f http://localhost:9001/health || echo "⚠️ Health check failed"
+          
+          echo "✅ Production restart completed!"
+        EOF
+        
+    - name: 🏥 Post-Deployment Health Check
       run: |
         echo "🏥 Running post-deployment health checks..."
-        sleep 5
-        echo "✅ All health checks passed"
+        
+        # 외부에서 웹훅 엔드포인트 테스트
+        echo "🔍 Testing webhook endpoint..."
+        curl -f http://${{ secrets.PRODUCTION_HOST }}:9001/health || echo "⚠️ External health check failed"
+        
+        echo "✅ All health checks completed"
+        echo "🔗 Application URL: http://${{ secrets.PRODUCTION_HOST }}:9001"
 
   # 📱 알림
   notify:

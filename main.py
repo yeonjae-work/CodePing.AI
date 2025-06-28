@@ -14,7 +14,8 @@ from shared.config.settings import get_settings
 from shared.utils.logging import setup_detailed_logging
 
 # Import models to register them with SQLAlchemy
-from modules.data_storage.models import Event
+# Note: Models are now in PyPI packages
+# from modules.data_storage.models import Event
 
 # Configure detailed logging
 setup_detailed_logging()
@@ -46,32 +47,29 @@ def create_app() -> FastAPI:
 
 
 def _auto_include_routers(app: FastAPI) -> None:
-    """Automatically discover and include routers from modules."""
+    """Include routers from PyPI packages."""
     
-    modules_path = Path(__file__).parent / "modules"
-    if not modules_path.exists():
-        logger.warning("Modules directory not found: %s", modules_path)
-        return
+    # List of PyPI packages that provide routers
+    pypi_routers = [
+        "universal_webhook_receiver.router",
+        # Add other PyPI package routers here as needed
+    ]
     
-    for module_dir in modules_path.iterdir():
-        if not module_dir.is_dir() or module_dir.name.startswith("_"):
-            continue
-        
+    for router_module_name in pypi_routers:
         try:
-            # Try to import router from module
-            module_name = f"modules.{module_dir.name}.router"
-            router_module = import_module(module_name)
+            # Import router from PyPI package
+            router_module = import_module(router_module_name)
             
             if hasattr(router_module, "router"):
                 app.include_router(router_module.router)
-                logger.info("✅ Included router from %s", module_name)
+                logger.info("✅ Included router from %s", router_module_name)
             else:
-                logger.warning("⚠️  No 'router' found in %s", module_name)
+                logger.warning("⚠️  No 'router' found in %s", router_module_name)
                 
         except ImportError as exc:
-            logger.info("ℹ️  Skipping %s (no router module): %s", module_dir.name, exc)
+            logger.warning("⚠️  Failed to import %s: %s", router_module_name, exc)
         except Exception as exc:
-            logger.error("❌ Failed to import router from %s: %s", module_dir.name, exc)
+            logger.error("❌ Failed to include router from %s: %s", router_module_name, exc)
 
 
 # Create app instance

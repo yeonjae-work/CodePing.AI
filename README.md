@@ -26,14 +26,19 @@ CodePing.AI는 GitHub 웹훅을 통해 코드 변경사항을 실시간으로 �
 - [CI/CD 파이프라인 가이드](docs/cicd_pipeline_guide.md)
 - [문서 자동화 가이드](docs/documentation_automation_guide.md)
 
-## 🔧 PyPI 패키지
+## 🔧 모듈 구조
 
-프로젝트는 다음 12개의 독립적인 PyPI 패키지로 구성되어 있습니다:
+### 📦 PyPI 패키지 (업로드 완료)
+- `universal_llm_service` - LLM 서비스 연동 ✅
 
+### 🏠 로컬 모듈 (현재 사용 중)
+- `shared/` - 공통 설정, 데이터베이스, 유틸리티
+- `infrastructure/` - AWS, GitHub, OpenAI, Slack 클라이언트
+
+### 📋 PyPI 업로드 예정 모듈
 - `universal_data_storage` - 데이터 저장 및 관리
 - `universal_webhook_receiver` - 웹훅 수신 및 처리
 - `universal_git_data_parser` - Git 데이터 파싱
-- `universal_llm_service` - LLM 서비스 연동
 - `universal_notification_service` - 알림 서비스
 - `universal_notion_sync` - Notion 동기화
 - `universal_schedule_manager` - 스케줄 관리
@@ -42,6 +47,8 @@ CodePing.AI는 GitHub 웹훅을 통해 코드 변경사항을 실시간으로 �
 - `universal_data_aggregator` - 데이터 집계
 - `universal_data_retriever` - 데이터 조회
 - `universal_diff_analyzer` - 코드 차이 분석
+
+> **참고**: 현재 대부분의 모듈이 로컬에서 개발 중이며, 안정화 후 순차적으로 PyPI에 업로드될 예정입니다.
 
 ## 🛠️ 개발 환경 설정
 

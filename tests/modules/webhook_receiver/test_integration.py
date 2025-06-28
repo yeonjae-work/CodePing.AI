@@ -149,7 +149,7 @@ def test_real_github_push_webhook(mock_send_task):
     """Test with realistic GitHub push webhook payload."""
     # Mock Celery task
     mock_send_task.return_value = AsyncMock()
-    
+
     payload = _real_github_push_payload()
     body = json.dumps(payload).encode()
     headers = {
@@ -157,12 +157,12 @@ def test_real_github_push_webhook(mock_send_task):
         "X-GitHub-Event": "push",
         "Content-Type": "application/json",
     }
-    
+
     response = client.post("/webhook/", content=body, headers=headers)
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Check response structure
     assert "repository" in data
     assert data["repository"] == "baxterthehacker/public-repo"
@@ -170,13 +170,13 @@ def test_real_github_push_webhook(mock_send_task):
     assert data["ref"] == "refs/heads/changes"
     assert "commits" in data
     assert len(data["commits"]) == 1
-    
+
     # Verify commit details
     commit = data["commits"][0]
     assert commit["id"] == "0d1a26e67d8f5eaf1f6ba5c57fc3c7d91ac0fd1c"
     assert commit["message"] == "Update README.md"
     assert commit["author"] == "baxterthehacker"
-    
+
     # Verify Celery task was called (just check task name and payload, not headers)
     mock_send_task.assert_called_once()
     call_args = mock_send_task.call_args
@@ -192,24 +192,24 @@ def test_real_github_push_webhook(mock_send_task):
 def test_github_force_push_webhook(mock_send_task):
     """Test GitHub force push webhook."""
     mock_send_task.return_value = AsyncMock()
-    
+
     payload = _real_github_push_payload()
     payload["forced"] = True
     payload["before"] = "0000000000000000000000000000000000000000"  # Force push indicator
-    
+
     body = json.dumps(payload).encode()
     headers = {
         "X-Hub-Signature-256": _create_signature(body),
         "X-GitHub-Event": "push",
         "Content-Type": "application/json",
     }
-    
+
     response = client.post("/webhook/", content=body, headers=headers)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["repository"] == "baxterthehacker/public-repo"
-    
+
     # Should still process force pushes
     mock_send_task.assert_called_once()
 
@@ -289,7 +289,7 @@ def test_large_payload_handling(mock_send_task):
     payload["head_commit"] = large_commits[-1]
 
     mock_send_task.return_value = AsyncMock()
-    
+
     body = json.dumps(payload).encode()
     headers = {
         "X-Hub-Signature-256": _create_signature(body),
@@ -301,7 +301,7 @@ def test_large_payload_handling(mock_send_task):
 
     assert response.status_code == 200
     data = response.json()
-    
+
     # Should handle all 50 commits
     assert len(data["commits"]) == 50
     assert data["repository"] == "baxterthehacker/public-repo"
@@ -310,4 +310,4 @@ def test_large_payload_handling(mock_send_task):
     mock_send_task.assert_called_once()
     call_args = mock_send_task.call_args
     assert call_args[0][0] == "webhook_receiver.process_webhook_async"
-    assert call_args[1]["args"][0] == payload  # First arg is the payload 
+    assert call_args[1]["args"][0] == payload  # First arg is the payload

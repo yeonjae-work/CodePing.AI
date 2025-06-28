@@ -107,7 +107,7 @@ class TestGitDataParserSimple:
         assert "README.md" in filenames
         assert "requirements.txt" in filenames
         assert "tests/test_new.py" in filenames
-        
+
         # README.md는 중복 제거되어 한 번만 나타나야 함
         readme_count = sum(1 for fn in filenames if fn == "README.md")
         assert readme_count == 1
@@ -115,7 +115,7 @@ class TestGitDataParserSimple:
     def test_calculate_diff_stats(self):
         """diff 통계 계산 테스트"""
         from modules.git_data_parser.models import FileChange
-        
+
         file_changes = [
             FileChange(filename="file1.py", status="added", additions=10, deletions=0),
             FileChange(filename="file2.py", status="modified", additions=5, deletions=3),
@@ -130,4 +130,4 @@ class TestGitDataParserSimple:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"]) 
+    pytest.main([__file__, "-v"])

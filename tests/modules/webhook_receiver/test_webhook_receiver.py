@@ -81,7 +81,7 @@ def test_webhook_endpoint_valid_signature(mock_send_task):
     """Test webhook endpoint with valid GitHub push signature."""
     # Mock Celery task
     mock_send_task.return_value = AsyncMock()
-    
+
     payload = _sample_github_payload()
     body = json.dumps(payload).encode()
     headers = {
@@ -89,16 +89,16 @@ def test_webhook_endpoint_valid_signature(mock_send_task):
         "X-GitHub-Event": "push",
         "Content-Type": "application/json",
     }
-    
+
     response = client.post("/webhook/", content=body, headers=headers)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["repository"] == "test/repo"
     assert data["ref"] == "refs/heads/main"
     assert data["pusher"] == "testuser"
     assert len(data["commits"]) == 1
-    
+
     # Verify Celery task was called
     mock_send_task.assert_called_once()
 
@@ -112,9 +112,9 @@ def test_webhook_endpoint_invalid_signature():
         "X-GitHub-Event": "push",
         "Content-Type": "application/json",
     }
-    
+
     response = client.post("/webhook/", content=body, headers=headers)
-    
+
     assert response.status_code == 401
     assert "Invalid signature" in response.json()["detail"]
 
@@ -127,9 +127,9 @@ def test_webhook_endpoint_missing_signature():
         "X-GitHub-Event": "push",
         "Content-Type": "application/json",
     }
-    
+
     response = client.post("/webhook/", content=body, headers=headers)
-    
+
     assert response.status_code == 401
     assert "Missing signature" in response.json()["detail"]
 
@@ -143,9 +143,9 @@ def test_webhook_endpoint_unsupported_event():
         "X-GitHub-Event": "issues",
         "Content-Type": "application/json",
     }
-    
+
     response = client.post("/webhook/", content=body, headers=headers)
-    
+
     assert response.status_code == 202  # Accepted but ignored
     assert "ignored" in response.json()["detail"]
 
@@ -158,9 +158,9 @@ def test_webhook_endpoint_malformed_json():
         "X-GitHub-Event": "push",
         "Content-Type": "application/json",
     }
-    
+
     response = client.post("/webhook/", content=body, headers=headers)
-    
+
     assert response.status_code == 400  # Bad Request
 
 
@@ -181,20 +181,20 @@ def test_webhook_multiple_commits(mock_send_task):
         "removed": ["old_file.py"],
         "modified": ["file3.py"]
     })
-    
+
     body = json.dumps(payload).encode()
     headers = {
         "X-Hub-Signature-256": _create_signature(body),
         "X-GitHub-Event": "push",
         "Content-Type": "application/json",
     }
-    
+
     response = client.post("/webhook/", content=body, headers=headers)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert len(data["commits"]) == 2
-    
+
     # Should be called once with entire payload
     mock_send_task.assert_called_once()
 
@@ -212,4 +212,4 @@ def test_root_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    assert "Git Diff Monitor API" in data["message"] 
+    assert "Git Diff Monitor API" in data["message"]

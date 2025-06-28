@@ -6,7 +6,7 @@ WebhookReceiver 모듈 간단 단위 테스트
 
 import pytest
 import json
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from typing import Dict, Any
 
 from modules.webhook_receiver.service import WebhookService, PlatformDetector
@@ -184,4 +184,4 @@ class TestWebhookServiceIntegration:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"]) 
+    pytest.main([__file__, "-v"])

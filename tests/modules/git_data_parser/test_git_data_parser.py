@@ -1,7 +1,7 @@
 """
 GitDataParser 모듈 단위 테스트
 
-이 모듈은 GitHub/GitLab API 응답 데이터를 파싱하여 
+이 모듈은 GitHub/GitLab API 응답 데이터를 파싱하여
 DiffData 객체로 변환하는 기능을 테스트합니다.
 """
 
@@ -284,7 +284,7 @@ class TestGitDataParserIntegration:
 
         # 웹훅 형식을 GitHub API 형식으로 변환하여 테스트
         commit_data = self._convert_webhook_to_api_format(webhook_payload["head_commit"])
-        
+
         result = self.parser.parse_commit_data(commit_data, "webhook-repo")
 
         assert result.repository == "webhook-repo"
@@ -328,4 +328,4 @@ class TestGitDataParserIntegration:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"]) 
+    pytest.main([__file__, "-v"])

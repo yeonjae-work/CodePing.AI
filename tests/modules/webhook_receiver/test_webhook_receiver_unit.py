@@ -1,7 +1,7 @@
 """
 WebhookReceiver 모듈 독립 단위 테스트
 
-이 테스트는 FastAPI 라우터와 분리하여 WebhookService의 
+이 테스트는 FastAPI 라우터와 분리하여 WebhookService의
 비즈니스 로직만 독립적으로 테스트합니다.
 """
 
@@ -9,12 +9,11 @@ import pytest
 import json
 import hashlib
 import hmac
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from typing import Dict, Any
 
 from modules.webhook_receiver.service import WebhookService
 from modules.webhook_receiver.models import WebhookPayload, GitPlatform
-from shared.config.settings import get_settings
 
 
 class TestWebhookService:
@@ -78,7 +77,7 @@ class TestWebhookService:
         mock_send_task.return_value = AsyncMock()
 
         payload_data = self._create_github_push_payload()
-        
+
         result = await self.service.process_webhook(
             event_type="push",
             payload=payload_data,
@@ -91,7 +90,7 @@ class TestWebhookService:
     async def test_process_github_ping_webhook(self):
         """GitHub ping 웹훅 처리 테스트 (무시됨)"""
         payload_data = self._create_github_ping_payload()
-        
+
         result = await self.service.process_webhook(
             event_type="ping",
             payload=payload_data,
@@ -104,7 +103,7 @@ class TestWebhookService:
     async def test_process_unsupported_event_type(self):
         """지원하지 않는 이벤트 타입 처리 테스트"""
         payload_data = {"action": "opened"}
-        
+
         result = await self.service.process_webhook(
             event_type="pull_request",  # 지원하지 않는 이벤트
             payload=payload_data,
@@ -121,7 +120,7 @@ class TestWebhookService:
             "repository": {"full_name": "test/repo"},
             "commits": []  # 빈 커밋 리스트
         }
-        
+
         result = await self.service.process_webhook(
             event_type="push",
             payload=payload_data,
@@ -137,7 +136,7 @@ class TestWebhookService:
         mock_send_task.return_value = AsyncMock()
 
         payload_data = self._create_github_push_payload_with_multiple_commits()
-        
+
         result = await self.service.process_webhook(
             event_type="push",
             payload=payload_data,
@@ -248,7 +247,7 @@ class TestWebhookService:
     def _create_github_push_payload_with_multiple_commits(self) -> Dict[str, Any]:
         """여러 커밋이 있는 GitHub push 웹훅 더미 페이로드 생성"""
         base_payload = self._create_github_push_payload()
-        
+
         # 3개의 커밋 추가
         commits = []
         for i in range(3):
@@ -267,7 +266,7 @@ class TestWebhookService:
 
         base_payload["commits"] = commits
         base_payload["head_commit"] = commits[-1]  # 마지막 커밋을 head_commit으로
-        
+
         return base_payload
 
     def _create_github_ping_payload(self) -> Dict[str, Any]:
@@ -344,7 +343,7 @@ class TestWebhookServiceStress:
 
         for payload in malformed_payloads:
             try:
-                webhook_payload = WebhookPayload(
+                WebhookPayload(
                     event_type="push",
                     platform=GitPlatform.GITHUB,
                     repository="test/repo",
@@ -357,4 +356,4 @@ class TestWebhookServiceStress:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"]) 
+    pytest.main([__file__, "-v"])

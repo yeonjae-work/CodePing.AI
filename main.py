@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan context manager."""
     # Startup
     logger.info("🚀 Starting Git Diff Monitor...")
-    
+
     # Create database tables
     try:
         await create_tables()
@@ -36,9 +36,9 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     logger.info("📊 Database: %s", settings.database_url)
     logger.info("🔧 Celery: %s", settings.celery_broker_url)
-    
+
     yield
-    
+
     # Shutdown
     logger.info("🛑 Shutting down Git Diff Monitor...")
 

@@ -78,7 +78,7 @@ def _sample_github_payload() -> dict:
     }
 
 
-@patch("universal_webhook_receiver.service.celery_app.send_task")
+@patch("yeonjae_universal_webhook_receiver.service.celery_app.send_task")
 def test_webhook_endpoint_valid_signature(mock_send_task):
     """Test webhook endpoint with valid GitHub push signature."""
     # Mock Celery task
@@ -166,7 +166,7 @@ def test_webhook_endpoint_malformed_json():
     assert response.status_code == 400  # Bad Request
 
 
-@patch("universal_webhook_receiver.service.celery_app.send_task")
+@patch("yeonjae_universal_webhook_receiver.service.celery_app.send_task")
 def test_webhook_multiple_commits(mock_send_task):
     """Test webhook with multiple commits."""
     # Mock Celery task

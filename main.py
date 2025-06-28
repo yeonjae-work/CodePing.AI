@@ -73,7 +73,7 @@ def _auto_include_routers(app: FastAPI) -> None:
 
     # List of PyPI packages that provide routers
     pypi_routers = [
-        "universal_webhook_receiver.router",
+        "yeonjae_universal_webhook_receiver.router",
         # Add other PyPI package routers here as needed
     ]
 

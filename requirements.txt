@@ -20,4 +20,8 @@ requests-mock>=1.9.3
 radon==6.0.1            # 코드 복잡도 분석
 pygments==2.17.2        # 언어 감지 및 하이라이팅
 tree-sitter==0.24.0     # AST 파싱 (선택적)
-tree-sitter-python==0.23.6  # Python AST 파싱 (선택적) 
+tree-sitter-python==0.23.6  # Python AST 파싱 (선택적)
+
+# Universal 패키지들 (수정된 버전)
+yeonjae-universal-webhook-receiver==1.0.4
+yeonjae-universal-git-data-parser==1.0.3 

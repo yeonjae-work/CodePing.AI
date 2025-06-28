@@ -48,6 +48,34 @@ jobs:
         
         echo "✅ All dependencies installed from requirements.txt"
         
+        echo "🔍 Debugging: Checking installed packages..."
+        echo "📋 All installed packages:"
+        pip list | grep yeonjae || echo "❌ No yeonjae packages found"
+        
+        echo "📂 Python path:"
+        python -c "import sys; print('\n'.join(sys.path))"
+        
+        echo "🧪 Testing individual package imports:"
+        python -c "
+        packages = [
+            'yeonjae_universal_git_data_parser',
+            'yeonjae_universal_webhook_receiver'
+        ]
+        for pkg in packages:
+            try:
+                __import__(pkg)
+                print(f'✅ {pkg} - SUCCESS')
+            except ImportError as e:
+                print(f'❌ {pkg} - FAILED: {e}')
+                # Try alternative import names
+                alt_name = pkg.replace('_', '-')
+                try:
+                    __import__(alt_name)
+                    print(f'✅ {alt_name} - SUCCESS (alternative)')
+                except ImportError as e2:
+                    print(f'❌ {alt_name} - FAILED: {e2}')
+        "
+        
     - name: 🔍 Code quality checks
       run: |
         echo "🎨 Code formatting..."

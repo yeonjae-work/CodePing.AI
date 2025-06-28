@@ -46,6 +46,21 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-cov black flake8 bandit safety
         
+        echo "📦 Installing PyPI packages..."
+        pip install \
+          universal-data-storage \
+          universal-webhook-receiver \
+          universal-git-data-parser \
+          universal-llm-service \
+          universal-notification-service \
+          universal-notion-sync \
+          universal-schedule-manager \
+          universal-http-api-client \
+          universal-prompt-builder \
+          universal-data-aggregator \
+          universal-data-retriever \
+          universal-diff-analyzer
+        
     - name: 🔍 Code quality checks
       run: |
         echo "🎨 Code formatting..."

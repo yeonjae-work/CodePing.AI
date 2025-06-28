@@ -22,6 +22,16 @@ pygments==2.17.2        # 언어 감지 및 하이라이팅
 tree-sitter==0.24.0     # AST 파싱 (선택적)
 tree-sitter-python==0.23.6  # Python AST 파싱 (선택적)
 
-# Universal 패키지들 (수정된 버전)
-yeonjae-universal-webhook-receiver==1.0.4
-yeonjae-universal-git-data-parser==1.0.3 
+# Universal 패키지들
+yeonjae-universal-data-aggregator==1.0.2
+yeonjae-universal-data-retriever==1.0.2
+yeonjae-universal-data-storage==1.0.3
+yeonjae-universal-diff-analyzer==1.0.2
+yeonjae-universal-git-data-parser==1.0.3
+yeonjae-universal-http-api-client==1.0.1
+yeonjae-universal-llm-service==1.0.1
+yeonjae-universal-notification-service==1.0.1
+yeonjae-universal-notion-sync==1.0.1
+yeonjae-universal-prompt-builder==1.0.2
+yeonjae-universal-schedule-manager==1.0.2
+yeonjae-universal-webhook-receiver==1.0.4 

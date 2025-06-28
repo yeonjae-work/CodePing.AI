@@ -44,24 +44,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-cov black flake8 bandit safety
+        pip install pytest-cov black flake8 bandit safety
         
-        echo "📦 Installing PyPI packages with yeonjae- prefix..."
-        pip install \
-          yeonjae-universal-git-data-parser \
-          yeonjae-universal-http-api-client \
-          yeonjae-universal-llm-service \
-          yeonjae-universal-notification-service \
-          yeonjae-universal-notion-sync \
-          yeonjae-universal-data-aggregator \
-          yeonjae-universal-data-retriever \
-          yeonjae-universal-data-storage \
-          yeonjae-universal-diff-analyzer \
-          yeonjae-universal-prompt-builder \
-          yeonjae-universal-schedule-manager \
-          yeonjae-universal-webhook-receiver
-        
-        echo "✅ 12개 PyPI 패키지 설치 완료"
+        echo "✅ All dependencies installed from requirements.txt"
         
     - name: 🔍 Code quality checks
       run: |

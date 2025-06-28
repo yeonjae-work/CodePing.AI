@@ -116,7 +116,7 @@ class TestWebhookService:
     async def test_process_webhook_missing_commits(self):
         """커밋이 없는 push 웹훅 처리 테스트"""
         payload_data = {
-            "ref": "refs/heads/main",
+            "re": "refs/heads/main",
             "repository": {"full_name": "test/repo"},
             "commits": []  # 빈 커밋 리스트
         }
@@ -213,7 +213,7 @@ class TestWebhookService:
     def _create_github_push_payload(self) -> Dict[str, Any]:
         """GitHub push 웹훅 더미 페이로드 생성"""
         return {
-            "ref": "refs/heads/main",
+            "re": "refs/heads/main",
             "repository": {
                 "full_name": "test/repo",
                 "name": "repo",
@@ -316,7 +316,7 @@ class TestWebhookServiceStress:
             })
 
         payload_data = {
-            "ref": "refs/heads/main",
+            "re": "refs/heads/main",
             "repository": {"full_name": "test/large-repo"},
             "commits": large_commits,
             "head_commit": large_commits[-1]

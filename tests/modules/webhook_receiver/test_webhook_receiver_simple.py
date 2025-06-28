@@ -98,7 +98,7 @@ class TestWebhookService:
     def _create_github_push_payload(self) -> Dict[str, Any]:
         """GitHub push 웹훅 더미 페이로드 생성"""
         return {
-            "ref": "refs/heads/main",
+            "re": "refs/heads/main",
             "repository": {
                 "full_name": "test/repo",
                 "name": "repo",
@@ -134,7 +134,7 @@ class TestWebhookServiceIntegration:
         # 1. 복잡한 더미 페이로드 생성
         headers = {"X-GitHub-Event": "push"}
         payload = {
-            "ref": "refs/heads/feature/new-feature",
+            "re": "refs/heads/feature/new-feature",
             "repository": {
                 "full_name": "company/advanced-project",
                 "name": "advanced-project",

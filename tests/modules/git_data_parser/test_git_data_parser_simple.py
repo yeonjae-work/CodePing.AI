@@ -29,7 +29,7 @@ class TestGitDataParserSimple:
         """기본 웹훅 데이터 파싱 테스트"""
         dummy_payload = {
             "repository": {"full_name": "test/repo"},
-            "ref": "refs/heads/main",
+            "re": "refs/heads/main",
             "pusher": {"name": "test-user"},
             "commits": [
                 {

@@ -1,30 +1,22 @@
 """
-HTTPAPIClient 모듈 사용 예제
+HTTP API Client 데모 스크립트
 
-이 예제는 HTTPAPIClient 모듈의 주요 기능들을 보여줍니다:
-1. GitHub API 사용
-2. GitLab API 사용
-3. 캐싱 기능
-4. Rate Limiting
-5. 에러 처리
+이 스크립트는 HTTP API Client 모듈의 핵심 기능을 독립적으로 테스트합니다.
 """
 
-import os
 import sys
+import asyncio
+from pathlib import Path
+
+# 프로젝트 루트를 Python 경로에 추가
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from modules.http_api_client.service import HTTPAPIClient
+
+import os
 import logging
 from datetime import datetime
-
-# 프로젝트 루트를 path에 추가
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
-from modules.http_api_client import (
-    HTTPAPIClient,
-    Platform,
-    APIError,
-    RateLimitError,
-    AuthenticationError,
-    NetworkError,
-)
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)

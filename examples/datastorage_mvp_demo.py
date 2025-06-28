@@ -6,6 +6,7 @@ DataStorage MVP 버전 데모 스크립트
 """
 
 import sys
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -14,7 +15,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from modules.data_storage.models import CommitData, DiffData, StorageStatus
-from modules.data_storage.service import DataStorageManager
+from modules.data_storage.service import DataStorageManager, LegacyDataStorageService
 
 
 def demo_basic_storage():
@@ -26,7 +27,7 @@ def demo_basic_storage():
 
     # 샘플 커밋 데이터
     commit_data = CommitData(
-        commit_hash="demo123abc456def",
+        commit_hash="demo123abc456de",
         message="DataStorage MVP 데모 커밋",
         author="demo@codeping.ai",
         author_email="demo@codeping.ai",
@@ -52,7 +53,7 @@ index 1234567..abcdefg 100644
 +class DataStorageManager:
 +    def __init__(self):
 +        self.db_session = None
-+    
++
 +    def store_commit(self, commit_data, diff_data):
 +        # MVP implementation
 +        pass
@@ -97,7 +98,7 @@ index 0000000..1234567
     # 결과 출력
     print(f"✅ 저장 결과: {result.status.value}")
     print(f"📊 커밋 ID: {result.commit_id}")
-    print(f"📈 통계:")
+    print("📈 통계:")
     print(f"   - 변경된 파일: {result.metadata.get('files_changed', 0)}개")
     print(f"   - 추가된 라인: +{result.metadata.get('total_additions', 0)}")
     print(f"   - 삭제된 라인: -{result.metadata.get('total_deletions', 0)}")
@@ -114,7 +115,7 @@ def demo_duplicate_handling(manager):
 
     # 같은 해시로 다시 저장 시도
     duplicate_commit = CommitData(
-        commit_hash="demo123abc456def",  # 같은 해시
+        commit_hash="demo123abc456de",  # 같은 해시
         message="중복된 커밋 시도",
         author="another@codeping.ai",
         timestamp=datetime.now(timezone.utc),
@@ -136,7 +137,7 @@ def demo_commit_retrieval(manager):
     print("=" * 50)
 
     # 해시로 조회
-    commit_hash = "demo123abc456def"
+    commit_hash = "demo123abc456de"
     commit_with_diffs = manager.get_commit_by_hash(commit_hash)
 
     if commit_with_diffs:
@@ -151,7 +152,7 @@ def demo_commit_retrieval(manager):
         print(f"   - 파일 수: {commit.diff_count}")
         print(f"   - 총 변경: +{commit.total_additions}/-{commit.total_deletions}")
 
-        print(f"\n📁 변경된 파일들:")
+        print("\n📁 변경된 파일들:")
         for i, diff in enumerate(commit_with_diffs.diffs, 1):
             print(f"   {i}. {diff.file_path}")
             print(
@@ -251,7 +252,7 @@ def demo_multiple_commits(manager):
         else:
             print(f"   ❌ {i}/3: 실패 - {result.message}")
 
-    print(f"\n📈 배치 처리 결과:")
+    print("\n📈 배치 처리 결과:")
     print(f"   - 성공한 커밋: {successful}/{len(commits_to_store)}")
     print(f"   - 총 파일 수: {total_files}")
     print(f"   - 총 변경: +{total_additions}/-{total_deletions}")

@@ -52,7 +52,7 @@ class TestHTTPAPIClient:
         """GitHub GET 요청 성공 테스트"""
         with requests_mock.Mocker() as m:
             # Mock 응답 설정
-            mock_response = {
+            mock__response = {
                 "sha": "abc123",
                 "commit": {
                     "message": "Test commit",
@@ -68,12 +68,13 @@ class TestHTTPAPIClient:
                 headers={
                     "X-RateLimit-Remaining": "4999",
                     "X-RateLimit-Limit": "5000",
-                    "X-RateLimit-Reset": str(int((datetime.now() + timedelta(hours=1)).timestamp()))
+                    "X-RateLimit-Reset": str(int((datetime.now() +
+                        timedelta(hours=1)).timestamp()))
                 }
             )
 
             # 요청 실행
-            response = github_client.get_commit("test/repo", "abc123")
+            _response = github_client.get_commit("test/repo", "abc123")
 
             # 응답 검증
             assert response.success is True
@@ -86,7 +87,7 @@ class TestHTTPAPIClient:
     def test_gitlab_get_request_success(self, gitlab_client):
         """GitLab GET 요청 성공 테스트"""
         with requests_mock.Mocker() as m:
-            mock_response = {
+            mock__response = {
                 "id": "abc123",
                 "message": "Test commit",
                 "author_name": "Test User",
@@ -104,11 +105,12 @@ class TestHTTPAPIClient:
                 headers={
                     "RateLimit-Remaining": "299",
                     "RateLimit-Limit": "300",
-                    "RateLimit-Reset": str(int((datetime.now() + timedelta(minutes=1)).timestamp()))
+                    "RateLimit-Reset": str(int((datetime.now() +
+                        timedelta(minutes=1)).timestamp()))
                 }
             )
 
-            response = gitlab_client.get_commit("test/repo", "abc123")
+            _response = gitlab_client.get_commit("test/repo", "abc123")
 
             assert response.success is True
             assert response.status_code == 200
@@ -141,7 +143,8 @@ class TestHTTPAPIClient:
                 headers={
                     "X-RateLimit-Remaining": "0",
                     "X-RateLimit-Limit": "5000",
-                    "X-RateLimit-Reset": str(int((datetime.now() + timedelta(hours=1)).timestamp())),
+                    "X-RateLimit-Reset": str(int((datetime.now() +
+                        timedelta(hours=1)).timestamp())),
                     "Retry-After": "3600"
                 }
             )
@@ -155,7 +158,7 @@ class TestHTTPAPIClient:
     def test_cache_functionality(self, github_client):
         """캐시 기능 테스트"""
         with requests_mock.Mocker() as m:
-            mock_response = {
+            mock__response = {
                 "sha": "abc123",
                 "commit": {"message": "Test commit"}
             }
@@ -182,7 +185,7 @@ class TestHTTPAPIClient:
     def test_post_request(self, github_client):
         """POST 요청 테스트"""
         with requests_mock.Mocker() as m:
-            mock_response = {"status": "created", "id": 123}
+            mock__response = {"status": "created", "id": 123}
 
             m.post(
                 "https://api.github.com/repos/test/repo/issues",
@@ -195,7 +198,7 @@ class TestHTTPAPIClient:
                 "body": "Test description"
             }
 
-            response = github_client.post("/repos/test/repo/issues", data=data)
+            _response = github_client.post("/repos/test/repo/issues", data=data)
 
             assert response.success is True
             assert response.status_code == 201
@@ -211,7 +214,7 @@ class TestHTTPAPIClient:
 
             custom_headers = {"X-Custom-Header": "test-value"}
 
-            response = github_client.get("/repos/test/repo", headers=custom_headers)
+            _response = github_client.get("/repos/test/repo", headers=custom_headers)
 
             # 요청에 커스텀 헤더가 포함되었는지 확인
             request = m.last_request
@@ -272,7 +275,7 @@ class TestHTTPAPIClient:
         cache = github_client.cache
 
         # 테스트용 응답 생성
-        response = APIResponse.success_response(
+        _response = APIResponse.success_response(
             status_code=200,
             data={"test": "data"},
             headers={}
@@ -311,12 +314,12 @@ class TestPlatformSupport:
         with requests_mock.Mocker() as m:
             # Repository 정보 조회
             m.get("https://api.github.com/repos/test/repo", json={"name": "repo"})
-            response = client.get_repository("test/repo")
+            _response = client.get_repository("test/repo")
             assert response.success
 
             # Commit 정보 조회
             m.get("https://api.github.com/repos/test/repo/commits/abc123", json={"sha": "abc123"})
-            response = client.get_commit("test/repo", "abc123")
+            _response = client.get_commit("test/repo", "abc123")
             assert response.success
 
     def test_gitlab_platform_methods(self):
@@ -326,12 +329,12 @@ class TestPlatformSupport:
         with requests_mock.Mocker() as m:
             # Project 정보 조회
             m.get("https://gitlab.com/api/v4/projects/test%2Frepo", json={"name": "repo"})
-            response = client.get_repository("test/repo")
+            _response = client.get_repository("test/repo")
             assert response.success
 
             # Commit 정보 조회
             m.get("https://gitlab.com/api/v4/projects/test%2Frepo/commits/abc123", json={"id": "abc123"})
-            response = client.get_commit("test/repo", "abc123")
+            _response = client.get_commit("test/repo", "abc123")
             assert response.success
 
 

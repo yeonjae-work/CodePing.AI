@@ -419,7 +419,7 @@ async def _discover_hierarchy(config_file, database_id, max_depth, auto_add):
             click.echo("📝 새로 추가된 대상이 없습니다.")
     else:
         click.echo(
-            f"\n💡 발견된 데이터베이스를 동기화 대상으로 추가하려면 --auto-add 옵션을 사용하세요."
+            "\n💡 발견된 데이터베이스를 동기화 대상으로 추가하려면 --auto-add 옵션을 사용하세요."
         )
 
 
@@ -438,7 +438,7 @@ async def _test_connection():
         engine = await create_notion_sync_engine(token)
 
         # 테스트용 더미 페이지 조회 (실패해도 됨)
-        test_result = await engine.api_client.get_page("dummy-id")
+        _test_result = await engine.api_client.get_page("dummy-id")
 
         click.echo("✅ Notion API 연결 성공!")
         click.echo(f"   토큰: {token[:10]}...{token[-4:]}")

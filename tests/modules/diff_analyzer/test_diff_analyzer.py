@@ -36,10 +36,10 @@ class TestLanguageAnalyzer:
 
     def test_is_supported_language(self):
         analyzer = LanguageAnalyzer()
-        assert analyzer._is_supported_language("python") == True
-        assert analyzer._is_supported_language("javascript") == True
-        assert analyzer._is_supported_language("unknown") == False
-        assert analyzer._is_supported_language("markdown") == False
+        assert analyzer._is_supported_language("python") is True
+        assert analyzer._is_supported_language("javascript") is True
+        assert analyzer._is_supported_language("unknown") is False
+        assert analyzer._is_supported_language("markdown") is False
 
     def test_determine_file_type(self):
         analyzer = LanguageAnalyzer()
@@ -113,7 +113,7 @@ class TestCodeComplexityAnalyzer:
 
         result = analyzer.analyze_complexity(mock_file, "python")
 
-        assert result.analysis_success == True
+        assert result.analysis_success is True
         assert result.file_path == "test.py"
         assert result.language == "python"
         assert result.metrics.complexity_delta >= 0
@@ -129,7 +129,7 @@ class TestCodeComplexityAnalyzer:
 
         result = analyzer.analyze_complexity(mock_file, "unknown")
 
-        assert result.analysis_success == True
+        assert result.analysis_success is True
         assert result.metrics.complexity_delta == 1.5  # (20 - 5) * 0.1
 
 
@@ -155,7 +155,7 @@ class TestStructuralChangeAnalyzer:
 
         result = analyzer.analyze_structural_changes(mock_file, "python")
 
-        assert result.analysis_success == True
+        assert result.analysis_success is True
         assert "User" in result.changes.classes_added or "User" in result.changes.classes_modified
         assert "get_user" in result.changes.functions_added or "get_user" in result.changes.functions_modified
         assert len(result.changes.imports_added) > 0 or len(result.changes.imports_changed) > 0
@@ -163,14 +163,14 @@ class TestStructuralChangeAnalyzer:
     def test_is_test_file(self):
         analyzer = StructuralChangeAnalyzer()
 
-        assert analyzer._is_test_file("test_user.py") == True
-        assert analyzer._is_test_file("user_test.py") == True
-        assert analyzer._is_test_file("tests/test_auth.py") == True
-        assert analyzer._is_test_file("user.spec.js") == True
-        assert analyzer._is_test_file("UserTest.java") == True
+        assert analyzer._is_test_file("test_user.py") is True
+        assert analyzer._is_test_file("user_test.py") is True
+        assert analyzer._is_test_file("tests/test_auth.py") is True
+        assert analyzer._is_test_file("user.spec.js") is True
+        assert analyzer._is_test_file("UserTest.java") is True
 
-        assert analyzer._is_test_file("user.py") == False
-        assert analyzer._is_test_file("main.js") == False
+        assert analyzer._is_test_file("user.py") is False
+        assert analyzer._is_test_file("main.js") is False
 
 
 class TestDiffAnalyzer:

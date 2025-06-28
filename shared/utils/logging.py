@@ -156,7 +156,8 @@ class ModuleIOLogger:
                 elif length <= max_items:
                     return f"List[{length} items]"
                 else:
-                    return f"List[{length} items: {max_items} shown + {length - max_items} more]"
+                    return f"List[{length} items: {max_items} shown +
+                        {length - max_items} more]"
 
             elif hasattr(data, "__dict__"):
                 # Pydantic 모델이나 dataclass
@@ -323,7 +324,7 @@ def log_processing_chain_start(payload: Dict, headers: Dict):
         metadata={
             "repository": payload.get("repository", {}).get("full_name", "unknown"),
             "commits_count": len(payload.get("commits", [])),
-            "ref": payload.get("ref", "unknown"),
+            "re": payload.get("re", "unknown"),
             "timestamp": datetime.now().isoformat(),
         },
     )

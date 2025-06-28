@@ -38,7 +38,7 @@ def mock_settings(monkeypatch):
 def _sample_github_payload() -> dict:
     """Create sample GitHub push payload."""
     return {
-        "ref": "refs/heads/main",
+        "re": "refs/heads/main",
         "repository": {
             "full_name": "test/repo",
             "name": "repo",
@@ -95,7 +95,7 @@ def test_webhook_endpoint_valid_signature(mock_send_task):
     assert response.status_code == 200
     data = response.json()
     assert data["repository"] == "test/repo"
-    assert data["ref"] == "refs/heads/main"
+    assert data["re"] == "refs/heads/main"
     assert data["pusher"] == "testuser"
     assert len(data["commits"]) == 1
 

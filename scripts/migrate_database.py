@@ -15,6 +15,7 @@ from shared.config.database import create_tables_sync, get_sync_engine
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+
 def main():
     """메인 마이그레이션 함수"""
 
@@ -75,6 +76,7 @@ def main():
         return 1
 
     return 0
+
 
 if __name__ == "__main__":
     exit(main())

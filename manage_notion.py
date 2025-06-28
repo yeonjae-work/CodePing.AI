@@ -67,19 +67,19 @@ def cli(ctx, config):
 def test_simple():
     """간단한 동기화 테스트"""
     click.echo("🧪 간단한 동기화 테스트 시작...")
-    
+
     try:
         # 테스트용 페이지 ID (실제 존재하는 페이지로 교체 필요)
         test_page_id = "21c18a4c52a1804ba78ddbcc2ba649d4"
-        
+
         # 간단한 동기화 실행
         result = asyncio.run(_test_simple_sync(test_page_id))
-        
+
         if result:
             click.echo("✅ 간단한 동기화 테스트 성공!")
         else:
             click.echo("❌ 간단한 동기화 테스트 실패")
-            
+
     except Exception as e:
         click.echo(f"❌ 테스트 중 오류 발생: {e}")
 
@@ -88,16 +88,14 @@ async def _test_simple_sync(page_id: str):
     """간단한 동기화 테스트 실행"""
     try:
         token = get_notion_token()
-        
+
         # 간단한 페이지 동기화 테스트
         result = await quick_sync_page(
-            page_id=page_id,
-            token=token,
-            output_file="test_output.md"
+            page_id=page_id, token=token, output_file="test_output.md"
         )
-        
+
         return result is not None
-        
+
     except Exception as e:
         click.echo(f"동기화 오류: {e}")
         return False

@@ -19,4 +19,4 @@ if __name__ == "__main__":
             "--concurrency=2",
             "--queues=celery,webhook_queue,webhook",
         ]
-        )
+    )

@@ -11,7 +11,7 @@ import json
 import logging
 import time
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict
 from types import MappingProxyType
 
 # 모듈 흐름 추적을 위한 전용 로거
@@ -156,7 +156,8 @@ class ModuleIOLogger:
                 elif length <= max_items:
                     return f"List[{length} items]"
                 else:
-                    return f"List[{length} items: {max_items} shown + {length - max_items} more]"
+                    more_items = length - max_items
+                    return f"List[{length} items: {max_items} shown + {more_items} more]"
 
             elif hasattr(data, "__dict__"):
                 # Pydantic 모델이나 dataclass

@@ -1,8 +1,9 @@
-import sys
-from shared.config.celery_app import celery_app
-
 #!/usr/bin/env python3
 """Direct Celery worker runner script."""
+
+import sys
+import os
+from shared.config.celery_app import celery_app
 
 # Set environment variables
 os.environ["CELERY_ALWAYS_EAGER"] = "false"

@@ -29,24 +29,26 @@ CodePing.AI는 GitHub 웹훅을 통해 코드 변경사항을 실시간으로 �
 ## 🔧 모듈 구조
 
 ### 📦 PyPI 패키지 (업로드 완료)
-- `universal_llm_service` - LLM 서비스 연동 ✅
+모든 모듈이 `yeonjae-` prefix로 PyPI에 업로드되었습니다:
 
-### 🏠 로컬 모듈 (현재 사용 중)
+```bash
+pip install yeonjae-universal-git-data-parser      # Git 데이터 파싱
+pip install yeonjae-universal-http-api-client      # HTTP API 클라이언트  
+pip install yeonjae-universal-llm-service          # LLM 서비스 연동
+pip install yeonjae-universal-notification-service # 알림 서비스
+pip install yeonjae-universal-notion-sync          # Notion 동기화
+pip install yeonjae-universal-data-aggregator      # 데이터 집계
+pip install yeonjae-universal-data-retriever       # 데이터 조회
+pip install yeonjae-universal-data-storage         # 데이터 저장 및 관리
+pip install yeonjae-universal-diff-analyzer        # 코드 차이 분석
+pip install yeonjae-universal-prompt-builder       # 프롬프트 빌더
+pip install yeonjae-universal-schedule-manager     # 스케줄 관리
+pip install yeonjae-universal-webhook-receiver     # 웹훅 수신 및 처리
+```
+
+### 🏠 로컬 모듈
 - `shared/` - 공통 설정, 데이터베이스, 유틸리티
 - `infrastructure/` - AWS, GitHub, OpenAI, Slack 클라이언트
-
-### 📋 PyPI 업로드 예정 모듈
-- `universal_data_storage` - 데이터 저장 및 관리
-- `universal_webhook_receiver` - 웹훅 수신 및 처리
-- `universal_git_data_parser` - Git 데이터 파싱
-- `universal_notification_service` - 알림 서비스
-- `universal_notion_sync` - Notion 동기화
-- `universal_schedule_manager` - 스케줄 관리
-- `universal_http_api_client` - HTTP API 클라이언트
-- `universal_prompt_builder` - 프롬프트 빌더
-- `universal_data_aggregator` - 데이터 집계
-- `universal_data_retriever` - 데이터 조회
-- `universal_diff_analyzer` - 코드 차이 분석
 
 > **참고**: 현재 대부분의 모듈이 로컬에서 개발 중이며, 안정화 후 순차적으로 PyPI에 업로드될 예정입니다.
 

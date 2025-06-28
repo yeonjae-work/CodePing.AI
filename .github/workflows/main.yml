@@ -46,12 +46,22 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-cov black flake8 bandit safety
         
-        echo "📦 Installing available PyPI packages..."
-        # 현재 PyPI에 업로드된 패키지만 설치
-        pip install universal-llm-service || echo "⚠️ universal-llm-service 설치 실패"
+        echo "📦 Installing PyPI packages with yeonjae- prefix..."
+        pip install \
+          yeonjae-universal-git-data-parser \
+          yeonjae-universal-http-api-client \
+          yeonjae-universal-llm-service \
+          yeonjae-universal-notification-service \
+          yeonjae-universal-notion-sync \
+          yeonjae-universal-data-aggregator \
+          yeonjae-universal-data-retriever \
+          yeonjae-universal-data-storage \
+          yeonjae-universal-diff-analyzer \
+          yeonjae-universal-prompt-builder \
+          yeonjae-universal-schedule-manager \
+          yeonjae-universal-webhook-receiver
         
-        echo "ℹ️ 참고: 대부분의 모듈이 아직 PyPI에 업로드되지 않음"
-        echo "    로컬 shared/ 및 infrastructure/ 모듈을 사용합니다."
+        echo "✅ 12개 PyPI 패키지 설치 완료"
         
     - name: 🔍 Code quality checks
       run: |
@@ -89,8 +99,21 @@ jobs:
             except ImportError as e:
                 print(f'⚠️ {module}: {e}')
         
-        # PyPI 패키지 테스트
-        pypi_packages = ['universal_llm_service']
+        # PyPI 패키지 테스트 (yeonjae- prefix, 하이픈은 언더스코어로 변환)
+        pypi_packages = [
+            'yeonjae_universal_git_data_parser',
+            'yeonjae_universal_http_api_client', 
+            'yeonjae_universal_llm_service',
+            'yeonjae_universal_notification_service',
+            'yeonjae_universal_notion_sync',
+            'yeonjae_universal_data_aggregator',
+            'yeonjae_universal_data_retriever',
+            'yeonjae_universal_data_storage',
+            'yeonjae_universal_diff_analyzer',
+            'yeonjae_universal_prompt_builder',
+            'yeonjae_universal_schedule_manager',
+            'yeonjae_universal_webhook_receiver'
+        ]
         success_pypi = 0
         
         for pkg in pypi_packages:

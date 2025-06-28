@@ -46,20 +46,12 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-cov black flake8 bandit safety
         
-        echo "📦 Installing PyPI packages..."
-        pip install \
-          universal-data-storage \
-          universal-webhook-receiver \
-          universal-git-data-parser \
-          universal-llm-service \
-          universal-notification-service \
-          universal-notion-sync \
-          universal-schedule-manager \
-          universal-http-api-client \
-          universal-prompt-builder \
-          universal-data-aggregator \
-          universal-data-retriever \
-          universal-diff-analyzer
+        echo "📦 Installing available PyPI packages..."
+        # 현재 PyPI에 업로드된 패키지만 설치
+        pip install universal-llm-service || echo "⚠️ universal-llm-service 설치 실패"
+        
+        echo "ℹ️ 참고: 대부분의 모듈이 아직 PyPI에 업로드되지 않음"
+        echo "    로컬 shared/ 및 infrastructure/ 모듈을 사용합니다."
         
     - name: 🔍 Code quality checks
       run: |
@@ -80,33 +72,38 @@ jobs:
         echo "🧪 Running tests..."
         python -m pytest tests/ -v --cov=. --cov-report=xml --cov-report=term
         
-        echo "🔧 Testing PyPI packages import..."
+        echo "🔧 Testing available imports..."
         python -c "
-        packages = [
-            'universal_data_storage',
-            'universal_webhook_receiver', 
-            'universal_git_data_parser',
-            'universal_llm_service',
-            'universal_notification_service',
-            'universal_notion_sync',
-            'universal_schedule_manager',
-            'universal_http_api_client',
-            'universal_prompt_builder',
-            'universal_data_aggregator',
-            'universal_data_retriever',
-            'universal_diff_analyzer'
-        ]
+        import sys
+        print(f'🐍 Python version: {sys.version}')
         
-        success = 0
-        for pkg in packages:
+        # 로컬 모듈 테스트
+        local_modules = ['shared.config.settings', 'infrastructure', 'main']
+        success_local = 0
+        
+        for module in local_modules:
+            try:
+                __import__(module)
+                print(f'✅ {module}')
+                success_local += 1
+            except ImportError as e:
+                print(f'⚠️ {module}: {e}')
+        
+        # PyPI 패키지 테스트
+        pypi_packages = ['universal_llm_service']
+        success_pypi = 0
+        
+        for pkg in pypi_packages:
             try:
                 __import__(pkg)
-                print(f'✅ {pkg}')
-                success += 1
+                print(f'✅ {pkg} (PyPI)')
+                success_pypi += 1
             except ImportError as e:
                 print(f'⚠️ {pkg}: {e}')
         
-        print(f'📊 PyPI packages: {success}/{len(packages)} imported successfully')
+        print(f'📊 Import 결과:')
+        print(f'   로컬 모듈: {success_local}/{len(local_modules)}')
+        print(f'   PyPI 패키지: {success_pypi}/{len(pypi_packages)}')
         "
         
     - name: 📊 Upload coverage

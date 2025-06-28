@@ -274,7 +274,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, docker]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
     
     steps:
     - name: 📥 Checkout

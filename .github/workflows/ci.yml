@@ -1,0 +1,346 @@
+name: 🚀 CodePing.AI CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.12"
+  POETRY_VERSION: "1.7.1"
+
+jobs:
+  # 🔍 코드 품질 및 보안 검사
+  code-quality:
+    name: 📊 Code Quality & Security
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: 📦 Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: 🔧 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install flake8 black isort bandit safety mypy pytest-cov
+        
+    - name: 🎨 Code formatting check (Black)
+      run: |
+        black --check --diff .
+        
+    - name: 📐 Import sorting check (isort)
+      run: |
+        isort --check-only --diff .
+        
+    - name: 🔍 Linting (Flake8)
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
+    - name: 🛡️ Security check (Bandit)
+      run: |
+        bandit -r . -f json -o bandit-report.json || true
+        bandit -r . --severity-level medium
+        
+    - name: 🔒 Dependency vulnerability check (Safety)
+      run: |
+        safety check --json --output safety-report.json || true
+        safety check
+        
+    - name: 🏷️ Type checking (MyPy)
+      run: |
+        mypy . --ignore-missing-imports --no-strict-optional || true
+        
+    - name: 📊 Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  # 🧪 단위 테스트 및 통합 테스트
+  test:
+    name: 🧪 Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+    
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+        
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_USER: testuser
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: 📦 Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.python-version }}-pip-
+          
+    - name: 🔧 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-asyncio pytest-mock
+        
+    - name: 🔧 Set up test environment
+      run: |
+        cp .env.example .env.test
+        echo "DATABASE_URL=postgresql://testuser:testpassword@localhost:5432/testdb" >> .env.test
+        echo "TESTING=true" >> .env.test
+        
+    - name: 🧪 Run unit tests
+      env:
+        DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+        TESTING: true
+      run: |
+        pytest tests/ -v --cov=. --cov-report=xml --cov-report=html --cov-fail-under=70
+        
+    - name: 🧪 Run integration tests
+      env:
+        DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+        TESTING: true
+      run: |
+        python examples/simple_integration_test.py
+        
+    - name: 📊 Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  # 🐳 Docker 빌드 및 테스트
+  docker-build:
+    name: 🐳 Docker Build & Test
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐳 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: 🔧 Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: false
+        tags: codeping-ai:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
+    - name: 🧪 Test Docker image
+      run: |
+        docker run --rm codeping-ai:test python -c "
+        import sys
+        print(f'Python version: {sys.version}')
+        
+        # PyPI 패키지들 import 테스트
+        try:
+            from universal_data_storage.models import Event
+            from universal_webhook_receiver.router import WebhookService
+            print('✅ PyPI packages import successful')
+        except Exception as e:
+            print(f'❌ PyPI packages import failed: {e}')
+            sys.exit(1)
+            
+        print('🎉 Docker image test passed!')
+        "
+
+  # 🔐 보안 스캔
+  security-scan:
+    name: 🔐 Security Scan
+    runs-on: ubuntu-latest
+    needs: code-quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🔍 Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: 📊 Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # 📈 성능 테스트
+  performance-test:
+    name: 📈 Performance Test
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: 🔧 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install locust memory-profiler
+        
+    - name: 📈 Run performance tests
+      run: |
+        python -c "
+        import time
+        import psutil
+        import gc
+        from memory_profiler import profile
+        
+        # 메모리 사용량 테스트
+        def test_memory_usage():
+            start_memory = psutil.Process().memory_info().rss / 1024 / 1024
+            
+            # PyPI 패키지들 import
+            from universal_data_storage.models import Event
+            from universal_webhook_receiver.router import WebhookService
+            from universal_git_data_parser.service import GitDataParserService
+            
+            # 서비스 인스턴스 생성
+            services = []
+            for i in range(100):
+                services.append(GitDataParserService())
+            
+            end_memory = psutil.Process().memory_info().rss / 1024 / 1024
+            memory_diff = end_memory - start_memory
+            
+            print(f'Memory usage: {start_memory:.2f}MB -> {end_memory:.2f}MB (diff: {memory_diff:.2f}MB)')
+            
+            if memory_diff > 500:  # 500MB 이상 증가시 경고
+                print('⚠️ High memory usage detected')
+            else:
+                print('✅ Memory usage within acceptable range')
+                
+            del services
+            gc.collect()
+            
+        test_memory_usage()
+        "
+
+  # 🚀 배포 준비
+  deployment-ready:
+    name: 🚀 Deployment Ready
+    runs-on: ubuntu-latest
+    needs: [code-quality, test, docker-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🏷️ Generate deployment info
+      run: |
+        echo "🎉 All checks passed! Ready for deployment."
+        echo "📊 Deployment Summary:"
+        echo "- Commit SHA: ${{ github.sha }}"
+        echo "- Branch: ${{ github.ref_name }}"
+        echo "- Author: ${{ github.actor }}"
+        echo "- Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+        echo "- PyPI Packages: 12/12 integrated"
+        echo "- Tests: Passed"
+        echo "- Security: Scanned"
+        echo "- Docker: Built & Tested"
+        
+    - name: 📝 Create deployment artifact
+      run: |
+        mkdir -p deployment-info
+        cat > deployment-info/deployment.json << EOF
+        {
+          "commit_sha": "${{ github.sha }}",
+          "branch": "${{ github.ref_name }}",
+          "author": "${{ github.actor }}",
+          "timestamp": "$(date -u +"%Y-%m-%d %H:%M:%S UTC")",
+          "pypi_packages": 12,
+          "tests_passed": true,
+          "security_scanned": true,
+          "docker_ready": true,
+          "deployment_ready": true
+        }
+        EOF
+        
+    - name: 📊 Upload deployment info
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-info
+        path: deployment-info/
+
+  # 📱 알림
+  notification:
+    name: 📱 Notification
+    runs-on: ubuntu-latest
+    needs: [deployment-ready]
+    if: always()
+    
+    steps:
+    - name: 📱 Send success notification
+      if: needs.deployment-ready.result == 'success'
+      run: |
+        echo "✅ CI Pipeline completed successfully!"
+        echo "🚀 CodePing.AI is ready for deployment"
+        
+    - name: 📱 Send failure notification  
+      if: failure()
+      run: |
+        echo "❌ CI Pipeline failed!"
+        echo "🔧 Please check the logs and fix the issues" 

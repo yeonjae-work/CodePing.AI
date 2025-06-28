@@ -1,0 +1,74 @@
+version: 2
+updates:
+  # Python 의존성 업데이트
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "yeonjae-work"
+    assignees:
+      - "yeonjae-work"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "python"
+    allow:
+      - dependency-type: "all"
+    ignore:
+      # 메이저 버전 업데이트는 수동으로 처리
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # 보안 업데이트는 즉시 처리
+    security-updates:
+      enabled: true
+
+  # GitHub Actions 워크플로우 업데이트
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "yeonjae-work"
+    assignees:
+      - "yeonjae-work"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    allow:
+      - dependency-type: "all"
+
+  # Docker 베이스 이미지 업데이트
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "yeonjae-work"
+    assignees:
+      - "yeonjae-work"
+    commit-message:
+      prefix: "docker"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "docker"
+    allow:
+      - dependency-type: "all" 
